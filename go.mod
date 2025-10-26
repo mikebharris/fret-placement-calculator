@@ -1,3 +1,3 @@
-module hl2025signup
+module fretPlacementCalculator
 
 go 1.24
