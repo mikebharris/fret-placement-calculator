@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"math"
+	"slices"
 )
 
 // inspired by https://liutaiomottola.com/formulae/fret.htm
@@ -85,9 +86,35 @@ func quartercomma() {
 	// therefore in the scale: D Eb E F F# G G# Ab A Bb B C C# (13 notes)
 	// we get rid of the dieses by ditching the diminished fifth (Ab) and keeping the augmented forth (G#)
 	// this leaves D (d) Eb (c) E (d) F (c) F# (d) G (c) G# (d) A (d) Bb (c) B (d) C (c) C# (d) D
-	// with two diatonic semitones either side of the tonic (D) and forth (G) or one back in the circle of fifths
+	// with two diatonic semitones either side of the tonic (D) and forth (G) or one back in the circle of ratiosOfNotesToFundamental
 	//
 	// there are two tritones: D -> G# and D -> Ab
+
+	fmt.Println("Calculating based on quartercomma meantone based on narrowing of fifths by one quarter of a syntonic comma")
+	syntonicComma := 81.0 / 80.0
+	quarterCommaFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -1.0/4.0)
+
+	var ratiosOfNotesToFundamental []float64
+
+	fifthsFromTonic := 6
+	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
+		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(quarterCommaFifth, float64(i))))
+	}
+
+	slices.Sort(ratiosOfNotesToFundamental)
+
+	noteNames := []string{"C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"}
+
+	prevRatio := 1.0
+	for fretNumber, ratio := range ratiosOfNotesToFundamental {
+		distanceFromNut := *scaleLength - (*scaleLength / ratio)
+		interval := ratio / prevRatio
+		fmt.Printf("Place %d (%s) fret at %.1f (ratio %.3f; interval %.6f)\n", fretNumber, noteNames[fretNumber], distanceFromNut, ratio, interval)
+		prevRatio = ratio
+	}
+
+	octaveFretNumber := fifthsFromTonic*2 + 1
+	fmt.Printf("Place %d (C) fret at %.1f (ratio 2.0; interval %.6f)\n", octaveFretNumber, *scaleLength/2.0, 2.0/prevRatio)
 
 	chromaticSemitone := 1.044906727
 	diatonicSemitone := 1.069984488
@@ -102,4 +129,16 @@ func quartercomma() {
 		distanceFromNut := *scaleLength - *scaleLength*1/frequencyMultiplier
 		fmt.Printf("Place %d fret at %.3f\n", n+1, distanceFromNut)
 	}
+}
+
+func octaveReduce(pow float64) float64 {
+	for pow >= 2.0 || pow < 1.0 {
+		if pow >= 2.0 {
+			pow = pow / 2.0
+		}
+		if pow < 1.0 {
+			pow = pow * 2.0
+		}
+	}
+	return pow
 }
