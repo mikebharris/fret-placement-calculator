@@ -11,14 +11,14 @@ import (
 var temper = flag.String("temper", "", "Temper the intonation (equal, meantone, pythagorean)")
 var meantoneFifthTemperedBy = flag.Float64("temper-by", 0.25, "Meantone fifths tempered by (fraction less than one)")
 var extendMeantone = flag.Bool("extend", false, "Extend meantone scale")
-var scaleLength = flag.Float64("length", 540.0, "length of scale (any unit, defaults to 540.0mm)")
-var divisionsOfOctave = flag.Uint("divisions", 12, "equal tempered divisions of octave (12, 19, 23, 31, etc)")
-var numberOfFrets = flag.Uint("frets", 22, "number of frets (defaults to 22)")
-var diatonic = flag.Bool("diatonic", false, "produce diatonic scale (defaults to false)")
-var diatonicMode = flag.String("mode", "ionian", "mode for the diatonic scale (ionian, dorian, etc)")
+var scaleLength = flag.Float64("length", 540.0, "length of scale")
+var divisionsOfOctave = flag.Uint("divisions", 12, "equal tempered divisions of octave (12, 19, 23, 31, 53, etc)")
+var numberOfFrets = flag.Uint("frets", 22, "number of frets for equal temperament scale")
+var diatonic = flag.Bool("diatonic", false, "produce diatonic scale (not yet implemented)")
+var diatonicMode = flag.String("mode", "ionian", "mode for the diatonic scale (not yet implemented)")
 
-var modeMap []bool = []bool{false, true, false, true}
-var intervalMap [][]string = [][]string{{"lydian", "TTTSTTS"}, {"ionian", "TTSTTTS"}}
+//var modeMap []bool = []bool{false, true, false, true}
+//var intervalMap [][]string = [][]string{{"lydian", "TTTSTTS"}, {"ionian", "TTSTTTS"}}
 
 func main() {
 	flag.Parse()
