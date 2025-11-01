@@ -8,7 +8,7 @@ import (
 )
 
 // inspired by https://liutaiomottola.com/formulae/fret.htm
-var temper = flag.String("temper", "", "Temper the intonation (equal, meantone, pythagorean)")
+var temper = flag.String("temper", "", "Temper the intonation (equal, meantone, pythagorean, saz)")
 var meantoneFifthTemperedBy = flag.Float64("temper-by", 0.25, "Meantone fifths tempered by (fraction less than one)")
 var extendMeantone = flag.Bool("extend", false, "Extend meantone scale")
 var scaleLength = flag.Float64("length", 540.0, "length of scale")
@@ -30,8 +30,21 @@ func main() {
 		pythagorean(*scaleLength)
 	case "meantone":
 		meantone(*scaleLength, *meantoneFifthTemperedBy, *extendMeantone)
+	case "saz":
+		saz(*scaleLength)
 	default:
 		justIntonation(*scaleLength)
+	}
+}
+
+func saz(scaleLength float64) {
+	// as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
+	var ratios = [][]uint{{18, 17}, {12, 11}, {9, 8}, {81, 68}, {27, 22}, {81, 64}, {4, 3}, {24, 17}, {16, 11}, {3, 2}, {27, 17}, {18, 11}, {27, 16}, {16, 9}, {32, 17}, {64, 33}, {2, 1}}
+
+	fmt.Println("Calculating fret positions on the saz cura....")
+	for _, ratio := range ratios {
+		distanceFromNut := scaleLength - (scaleLength/float64(ratio[0]))*float64(ratio[1])
+		fmt.Printf("Place %d:%d fret at %.3f\n", ratio[0], ratio[1], distanceFromNut)
 	}
 }
 
