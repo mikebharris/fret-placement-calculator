@@ -41,11 +41,8 @@ func saz(scaleLength float64) {
 	// as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
 	var ratios = [][]uint{{18, 17}, {12, 11}, {9, 8}, {81, 68}, {27, 22}, {81, 64}, {4, 3}, {24, 17}, {16, 11}, {3, 2}, {27, 17}, {18, 11}, {27, 16}, {16, 9}, {32, 17}, {64, 33}, {2, 1}}
 
-	fmt.Println("Calculating fret positions on the saz cura....")
-	for _, ratio := range ratios {
-		distanceFromNut := scaleLength - (scaleLength/float64(ratio[0]))*float64(ratio[1])
-		fmt.Printf("Place %d:%d fret at %.3f\n", ratio[0], ratio[1], distanceFromNut)
-	}
+	fmt.Println("Calculating fret positions on the saz cura ratios....")
+	computeScaleFromRatios(scaleLength, ratios)
 }
 
 func equalTemperament(scaleLength float64, divisionsOfOctave uint, numberOfFrets uint) {
@@ -65,29 +62,20 @@ func justIntonation(scaleLength float64) {
 	var ratios = [][]uint{{16, 15}, {10, 9}, {9, 8}, {6, 5}, {5, 4}, {35, 25}, {4, 3}, {45, 32}, {3, 2}, {8, 5}, {5, 3}, {16, 9}, {9, 5}, {15, 8}, {2, 1}}
 
 	fmt.Println("Calculating based on just intonation pure ratios....")
-	for _, ratio := range ratios {
-		distanceFromNut := scaleLength - (scaleLength/float64(ratio[0]))*float64(ratio[1])
-
-		// frequency is the top of the ratio divided by the bottom of the ratio
-		// need therefore the starting frequency of the string?
-
-		// 440 * 3 / 2 = 660Hz - 1/3 way along the string
-		// 440 * 2 / 1 = 880Hz - 1/2 way along the string
-		// wavelength = 1/freq
-		// 440 * 16 / 15 = 469.33Hz - 1 / 16 way along the string (rest of string is 15/16)
-		// placement = string length - (string length / 16 * 15)
-
-		fmt.Printf("Place %d:%d fret around %.3f\n", ratio[0], ratio[1], distanceFromNut)
-	}
+	computeScaleFromRatios(scaleLength, ratios)
 }
 
 func pythagorean(scaleLength float64) {
 	var ratios = [][]uint{{256, 243}, {9, 8}, {32, 27}, {81, 64}, {4, 3}, {1024, 729}, {729, 512}, {3, 2}, {128, 81}, {27, 16}, {16, 9}, {243, 128}, {2, 1}}
 
 	fmt.Println("Calculating based on Pythagorean ratios....")
-	for _, ratio := range ratios {
+	computeScaleFromRatios(scaleLength, ratios)
+}
+
+func computeScaleFromRatios(scaleLength float64, ratios [][]uint) {
+	for fret, ratio := range ratios {
 		distanceFromNut := scaleLength - (scaleLength/float64(ratio[0]))*float64(ratio[1])
-		fmt.Printf("Place %d:%d fret around %.3f\n", ratio[0], ratio[1], distanceFromNut)
+		fmt.Printf("Place %d fret for ratio %d:%d around %.3f\n", fret+1, ratio[0], ratio[1], distanceFromNut)
 	}
 }
 
