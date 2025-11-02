@@ -32,4 +32,8 @@ Compute 31 EDO:
 
 `go run main.go -length=546 -temper=equal -divisions=31`
 
+Compute fret placements for a saz/baglama:
+
+`go run main.go -length=546 -temper=saz`
+
 
