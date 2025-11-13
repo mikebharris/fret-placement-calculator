@@ -52,9 +52,9 @@ func equalTemperament(scaleLength float64, divisionsOfOctave uint, numberOfFrets
 		numberOfFrets = divisionsOfOctave
 	}
 
-	for f := uint(1); f <= numberOfFrets; f++ {
-		distanceFromNut := scaleLength - (scaleLength / math.Exp2(float64(f)/float64(divisionsOfOctave)))
-		fmt.Printf("Place fret # %d at %.3f\n", int(f), distanceFromNut)
+	for fretNumber := uint(1); fretNumber <= numberOfFrets; fretNumber++ {
+		distanceFromNut := scaleLength - (scaleLength / math.Exp2(float64(fretNumber)/float64(divisionsOfOctave)))
+		fmt.Printf("Place fret # %d at %.3f\n", int(fretNumber), distanceFromNut)
 	}
 }
 
@@ -73,9 +73,9 @@ func pythagorean(scaleLength float64) {
 }
 
 func computeScaleFromRatios(scaleLength float64, ratios [][]uint) {
-	for fret, ratio := range ratios {
+	for fretNumber, ratio := range ratios {
 		distanceFromNut := scaleLength - (scaleLength/float64(ratio[0]))*float64(ratio[1])
-		fmt.Printf("Place %d fret for ratio %d:%d around %.3f\n", fret+1, ratio[0], ratio[1], distanceFromNut)
+		fmt.Printf("Place %d fretNumber for ratio %d:%d around %.3f\n", fretNumber+1, ratio[0], ratio[1], distanceFromNut)
 	}
 }
 
