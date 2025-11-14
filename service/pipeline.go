@@ -66,7 +66,7 @@ func runTerraformCommandForRegion(tfOp string) {
 	var tfLog strings.Builder
 	tf.SetLogger(log.New(&tfLog, "log: ", log.LstdFlags))
 
-	tfWorkingBucket := fmt.Sprintf("%d-%s-terraform-deployments", *awsAccountNumber, awsRegion)
+	tfWorkingBucket := fmt.Sprintf("%d-%s-terraform-deployments", *awsAccountNumber, *awsRegion)
 	switch tfOp {
 	case "init":
 		terraformInit(tf, tfWorkingBucket, *awsRegion)

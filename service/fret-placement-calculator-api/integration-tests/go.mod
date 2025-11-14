@@ -4,8 +4,6 @@ go 1.22.2
 
 require (
 	github.com/aws/aws-lambda-go v1.47.0
-	github.com/aws/aws-sdk-go-v2 v1.27.0
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.6
 	github.com/cucumber/godog v0.14.1
 	github.com/mikebharris/testcontainernetwork-go v0.4.0
 	github.com/stretchr/testify v1.9.0

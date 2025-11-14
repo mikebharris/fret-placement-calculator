@@ -172,3 +172,188 @@ func Test_shouldReturnExtendedQuarterCommaMeantonePlacementsWithProvidedScaleLen
 
 	assert.Nil(t, err)
 }
+
+func Test_shouldReturnFifthCommaMeantonePlacementsWithProvidedScaleLength(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+	headers := map[string]string{"Content-Type": "application/json"}
+	greaterSemitone := 1.066667
+	lesserSemitone := 1.049460
+	dieses := 1.016396
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "meantone", "temper-by": "0.2"}})
+
+	// Then
+	fretting := handler.Fretting{}
+
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	_ = json.Unmarshal([]byte(response.Body), &fretting)
+
+	assert.Equal(t, float64(540), fretting.ScaleLength)
+	assert.Equal(t, "meantone", fretting.System)
+	assert.Equal(t, "Calculating meantone based on narrowing of fifths by 0.20 of a syntonic comma (81/80).  Nominal note names used based on a tonic of D.", fretting.Description)
+	assert.Equal(t, 13, len(fretting.Frets))
+
+	assert.Equal(t, handler.Fret{
+		Label:    "1 (Eb)",
+		Position: 33.7,
+		Comment:  fmt.Sprintf("ratio: 1.067; interval: %f", greaterSemitone),
+	}, fretting.Frets[0])
+
+	assert.Equal(t, handler.Fret{
+		Label:    "2 (E)",
+		Position: 57.6,
+		Comment:  fmt.Sprintf("ratio: 1.119; interval: %f", lesserSemitone),
+	}, fretting.Frets[1])
+
+	assert.Equal(t, handler.Fret{
+		Label:    "7 (Ab)",
+		Position: 161.3,
+		Comment:  fmt.Sprintf("ratio: 1.426; interval: %f", dieses),
+	}, fretting.Frets[6])
+
+	assert.Equal(t, handler.Fret{
+		Label:    "13 (Octave)",
+		Position: 270.0,
+		Comment:  fmt.Sprintf("ratio: 2.0; interval: %f", greaterSemitone),
+	}, fretting.Frets[12])
+
+	assert.Nil(t, err)
+}
+
+func Test_shouldReturnPythagoreanPlacementsWithProvidedScaleLength(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "pythagorean"}})
+
+	// Then
+	fretting := handler.Fretting{}
+
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	_ = json.Unmarshal([]byte(response.Body), &fretting)
+
+	assert.Equal(t, float64(540), fretting.ScaleLength)
+	assert.Equal(t, "pythagorean", fretting.System)
+	assert.Equal(t, "Calculating based Pythagorean ratios.", fretting.Description)
+	assert.Equal(t, 13, len(fretting.Frets))
+
+	assert.Equal(t, handler.Fret{Label: "256:243", Position: 27.4}, fretting.Frets[0])
+
+	assert.Nil(t, err)
+}
+
+func Test_ShouldReturnErrorWhenTemperParameterIsInvalid(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "invalid"}})
+
+	// Then
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"invalid temper parameter"}`}, response)
+	assert.Nil(t, err)
+}
+
+func Test_ShouldReturnErrorWhenTemperByParameterIsOutOfRange(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "meantone", "temper-by": "1.5"}})
+
+	// Then
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"temper-by parameter must be less than 1"}`}, response)
+	assert.Nil(t, err)
+}
+
+func Test_ShouldReturnEqualTemperamentPlacementsFor12EDOByDefault(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "equal"}})
+
+	// Then
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	fretting := handler.Fretting{}
+
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	_ = json.Unmarshal([]byte(response.Body), &fretting)
+
+	assert.Equal(t, float64(540), fretting.ScaleLength)
+	assert.Equal(t, "12-TET", fretting.System)
+	assert.Equal(t, 12, len(fretting.Frets))
+	assert.Equal(t, handler.Fret{Label: "Fret 1", Position: 30.308}, fretting.Frets[0])
+	assert.Equal(t, handler.Fret{Label: "Fret 12", Position: 270.0}, fretting.Frets[11])
+	assert.Nil(t, err)
+}
+
+func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "equal", "divisions": "19"}})
+
+	// Then
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	fretting := handler.Fretting{}
+
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	_ = json.Unmarshal([]byte(response.Body), &fretting)
+
+	assert.Equal(t, float64(540), fretting.ScaleLength)
+	assert.Equal(t, "19-TET", fretting.System)
+	assert.Equal(t, 19, len(fretting.Frets))
+	assert.Equal(t, handler.Fret{Label: "Fret 1", Position: 19.345}, fretting.Frets[0])
+	assert.Equal(t, handler.Fret{Label: "Fret 19", Position: 270.0}, fretting.Frets[18])
+	assert.Nil(t, err)
+}
+
+func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	h := handler.Handler{}
+
+	// When
+	response, err := h.HandleRequest(ctx, events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "saz"}})
+
+	// Then
+	headers := map[string]string{"Content-Type": "application/json"}
+
+	fretting := handler.Fretting{}
+
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	_ = json.Unmarshal([]byte(response.Body), &fretting)
+
+	assert.Equal(t, float64(540), fretting.ScaleLength)
+	assert.Equal(t, "saz", fretting.System)
+	assert.Equal(t, 17, len(fretting.Frets))
+	assert.Nil(t, err)
+}

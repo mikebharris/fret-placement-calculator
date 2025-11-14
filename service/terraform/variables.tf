@@ -1,25 +1,11 @@
-variable environment {}
 variable region {}
-variable account_number {}
 variable contact {
-  default = "https://hacktionlab.org"
+  default = "https://mbharris.co.uk"
 }
-variable product {
-  default = "CLAMS"
+variable project {
+  default = "fret-placement-calculator"
 }
 variable orchestration {
-  default = "https://github.com/mikebharris/clams"
+  default = "https://github.com/mikebharris/fret-placement-calculator"
 }
 variable distribution_bucket {}
-variable input_queue_name {
-  default = "attendee-input-queue"
-}
-variable attendees_table_name {
-  default = "attendees-datastore"
-}
-variable certificate_domain{
-  default = "events.hacktionlab.org"
-}
-variable frontend_domain{
-  default = "clams.events.hacktionlab.org"
-}

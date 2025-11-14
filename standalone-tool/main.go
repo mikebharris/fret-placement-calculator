@@ -97,7 +97,7 @@ func meantone(scaleLength float64, fifthTemperedByFractionOfSyntonicComma float6
 
 	fmt.Printf("Calculating based on extended meantone based on narrowing of fifths by %.2f of a syntonic comma (81/80)....\nNominal note names used based on a tonic of D:\n", fifthTemperedByFractionOfSyntonicComma)
 	syntonicComma := 81.0 / 80.0
-	quarterCommaFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fifthTemperedByFractionOfSyntonicComma)
+	temperedFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fifthTemperedByFractionOfSyntonicComma)
 
 	var fifthsFromTonic int
 	var noteNames []string
@@ -112,7 +112,7 @@ func meantone(scaleLength float64, fifthTemperedByFractionOfSyntonicComma float6
 
 	var ratiosOfNotesToFundamental []float64
 	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(quarterCommaFifth, float64(i))))
+		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(temperedFifth, float64(i))))
 	}
 
 	slices.Sort(ratiosOfNotesToFundamental)

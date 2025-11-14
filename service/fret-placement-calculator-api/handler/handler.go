@@ -59,20 +59,28 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 	}
 
 	if request.QueryStringParameters["temper"] == "meantone" {
-		// Placeholder for meantone temperament calculation
-		// Implement meantone temperament logic here
 		fretting.System = "meantone"
-		fifthTemperedByFractionOfSyntonicComma := 0.25
+
+		var fifthTemperedByFractionOfSyntonicComma float64
+		if request.QueryStringParameters["temper-by"] != "" {
+			fifthTemperedByFractionOfSyntonicComma, _ = strconv.ParseFloat(request.QueryStringParameters["temper-by"], 64)
+		} else {
+			fifthTemperedByFractionOfSyntonicComma = 0.25
+		}
 
 		extended := false
 		if request.QueryStringParameters["extended"] != "" {
 			extended, _ = strconv.ParseBool(request.QueryStringParameters["extended"])
 		}
 
-		fretting.Description = fmt.Sprintf("Calculating extended meantone based on narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used based on a tonic of D.", fifthTemperedByFractionOfSyntonicComma)
+		if extended {
+			fretting.Description = fmt.Sprintf("Calculating extended meantone based on narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used based on a tonic of D.", fifthTemperedByFractionOfSyntonicComma)
+		} else {
+			fretting.Description = fmt.Sprintf("Calculating meantone based on narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used based on a tonic of D.", fifthTemperedByFractionOfSyntonicComma)
+		}
 
 		syntonicComma := 81.0 / 80.0
-		quarterCommaFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fifthTemperedByFractionOfSyntonicComma)
+		temperedFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fifthTemperedByFractionOfSyntonicComma)
 
 		var fifthsFromTonic int
 		var noteNames []string
@@ -87,7 +95,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 		var ratiosOfNotesToFundamental []float64
 		for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-			ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(quarterCommaFifth, float64(i))))
+			ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(temperedFifth, float64(i))))
 		}
 
 		slices.Sort(ratiosOfNotesToFundamental)
@@ -114,6 +122,27 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 		})
 	}
 
+	if request.QueryStringParameters["temper"] != "pythagorean" {
+
+	}
+
+	if request.QueryStringParameters["temper"] == "equal" {
+		divisionsOfOctave := 12
+		if request.QueryStringParameters["divisions"] != "" {
+			divisionsOfOctave, _ = strconv.Atoi(request.QueryStringParameters["divisions"])
+		}
+		fretting.System = fmt.Sprintf("%d-TET", divisionsOfOctave)
+		fretting.Description = fmt.Sprintf("Calculating equal temperament (%s).", fretting.System)
+
+		for fretNumber := 1; fretNumber <= divisionsOfOctave; fretNumber++ {
+			distanceFromNut, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", scaleLength-(scaleLength/math.Exp2(float64(fretNumber)/float64(divisionsOfOctave)))), 64)
+			frets = append(frets, Fret{
+				Label:    fmt.Sprintf("Fret %d", fretNumber),
+				Position: distanceFromNut,
+			})
+		}
+	}
+
 	fretting.Frets = frets
 	body, _ := json.Marshal(fretting)
 
@@ -124,10 +153,10 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 func octaveReduce(ratio float64) float64 {
 	for ratio >= 2.0 || ratio < 1.0 {
 		if ratio >= 2.0 {
-			ratio = ratio / 2.0
+			ratio /= 2.0
 		}
 		if ratio < 1.0 {
-			ratio = ratio * 2.0
+			ratio *= 2.0
 		}
 	}
 	return ratio
