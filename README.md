@@ -1,39 +1,110 @@
-# Fret Placement Calculator
+# Fret Placement Calculator AWS Lambda service
 
-Outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for various tunings, including:
+Outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
+various tunings, including:
 
 * Just Intonation
 * Quarter-Comma Meantone
-* Extended Meantone
-* Any Equal Temperament
+* Extended Quarter-Comma Meantone
+* Any Equal Temperament (12, 19, 23, 31, 53, 55, etc)
 * Pythagorean
+* Turkish Saz
 
-It's agnostic of the actual open string tuning, tension of the string, type of instrument, etc.
+With the exception of the quarter-comma meantone calculator, the rest are agnostic of the actual open string tuning,
+tension of the string, type of instrument, etc.
 
-# Examples
+## Examples
+
+<details>
+ <summary><code>GET</code> <code><b>/scaleLength={scaleLength}</b></code> <code>(returns fret positions for just intonation and scale length of {scaleLength}</code></summary>
+
+##### Parameters
+
+> | name              | type     | data type | description                                             |
+> |-------------------|----------|-----------|---------------------------------------------------------|
+> | `scaleLength`     | required | float64   | The scale length from nut to bridge (saddle)            |
+> | `temper`          | optional | string    | Temper the scale (meantone, pythagorean, equal, or saz) |
+> | `extendMeantone`  | optional | bool      | Extend the meantone scale                               |
+> | `octaveDivisions` | optional | int       | Number of divisions of the octave for equal temperament |
+
+##### Responses
+
+> | http code | content-type       | response                                 |
+> |-----------|--------------------|------------------------------------------|
+> | `200`     | `application/json` | JSON object                              |
+> | `422`     | `application/json` | `{"code":"422","message":"Bad Request"}` |
+
+##### Example cURL
 
 Compute just intonation for a scale length of 546mm:
 
-`go run main.go -length=546`
+> ```shell
+>  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=546
+> ```
 
-Compute Pythagorean tuning for a scale length of 21 inches:
+````json
+{
+  "system": "ji",
+  "description": "Fret positions based on 5-limit just intonation pure ratios and diatonic scale.",
+  "scaleLength": 546,
+  "frets": [
+    {
+      "label": "9:8",
+      "position": 60.67
+    },
+    {
+      "label": "5:4",
+      "position": 109.2
+    },
+    {
+      "label": "4:3",
+      "position": 136.5
+    },
+    {
+      "label": "45:32",
+      "position": 157.73
+    },
+    {
+      "label": "3:2",
+      "position": 182
+    },
+    {
+      "label": "5:3",
+      "position": 218.4
+    },
+    {
+      "label": "16:9",
+      "position": 238.88
+    },
+    {
+      "label": "15:8",
+      "position": 254.8
+    },
+    {
+      "label": "2:1",
+      "position": 273
+    }
+  ]
+}
+````
 
-`go run main.go -length=21 -temper=pythagorean`
+</details>
 
-Computer extended quarter-comma meantone for a scale length of 546mm:
+## Building and provisioning
 
-`go run main.go -length=546 -temper=meantone -extend=true`
+To build this project, copy the tool https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool/blob/main/pipeline.go the project
+at https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool into the top-level directory, and do:
 
-Compute sixth-comma meantone:
+```shell
+go mod tidy
+go run pipeline.go --help
+```
 
-`go run main.go -length=546 -temper=meantone -temper-by=0.166666667`
+An example Terraform build and deploy command line:
 
-Compute 31 EDO:
+```shell
+go run pipeline.go --stage=build
+AWS_ACCESS_KEY_ID=???? AWS_SECRET_ACCESS_KEY=???? go run pipeline.go --account-number=123456789012 --app-name=fret-placement-calculator --environment=prod --region=us-east-1 --stage=plan
+````
 
-`go run main.go -length=546 -temper=equal -divisions=31`
-
-Compute fret placements for a saz/baglama:
-
-`go run main.go -length=546 -temper=saz`
-
-
+Refer to the documentation in that project for more details on how to use the deployment helper tool.
