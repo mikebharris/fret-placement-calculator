@@ -63,10 +63,6 @@ Compute just intonation for a scale length of 546mm:
       "position": 136.5
     },
     {
-      "label": "45:32",
-      "position": 157.73
-    },
-    {
       "label": "3:2",
       "position": 182
     },
