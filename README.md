@@ -20,12 +20,14 @@ tension of the string, type of instrument, etc.
 
 ##### Parameters
 
-> | name              | type     | data type | description                                             |
-> |-------------------|----------|-----------|---------------------------------------------------------|
-> | `scaleLength`     | required | float64   | The scale length from nut to bridge (saddle)            |
-> | `temper`          | optional | string    | Temper the scale (meantone, pythagorean, equal, or saz) |
-> | `extendMeantone`  | optional | bool      | Extend the meantone scale                               |
-> | `octaveDivisions` | optional | int       | Number of divisions of the octave for equal temperament |
+> | name              | type     | data type | default  | description                                             |
+> |-------------------|----------|-----------|----------|---------------------------------------------------------|
+> | `scaleLength`     | required | float64   |          | The scale length from nut to bridge (saddle)            |
+> | `temper`          | optional | string    |          | Temper the scale (meantone, pythagorean, equal, or saz) |
+> | `extendMeantone`  | optional | bool      | false    | Extend the meantone scale                               |
+> | `octaveDivisions` | optional | int       | 31       | Number of divisions of the octave for equal temperament |
+> | `mode`            | optional | int       | "Ionian" | Musical mode (implemented for just intonation)          |
+> | `octaves`         | optional | int       | 1        | Number of octaves of frets to compute                   |
 
 ##### Responses
 
@@ -92,8 +94,10 @@ Compute just intonation for a scale length of 546mm:
 
 ## Building and provisioning
 
-To build this project, copy the tool https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool/blob/main/pipeline.go the project
-at https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool into the top-level directory, and do:
+To build this project, copy the
+tool https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool/blob/main/pipeline.go the project
+at https://github.com/mikebharris/aws-deployment-pipeline-orchestration-helper-tool into the top-level directory, and
+do:
 
 ```shell
 go mod tidy

@@ -122,12 +122,12 @@ func (s *steps) iAmProvidedWithTheFretPlacementsForJustIntonation() error {
 
 	assert.Equal(s.t, "ji", fretPlacements.System)
 	assert.Equal(s.t, 540.0, fretPlacements.ScaleLength)
-	assert.Equal(s.t, 9, len(fretPlacements.Frets))
+	assert.Equal(s.t, 7, len(fretPlacements.Frets))
 
 	assert.Equal(s.t, "9:8", fretPlacements.Frets[0].Label)
 	assert.Equal(s.t, 60.00, fretPlacements.Frets[0].Position)
 
-	assert.Equal(s.t, "2:1", fretPlacements.Frets[8].Label)
-	assert.Equal(s.t, 270.0, fretPlacements.Frets[8].Position)
+	assert.Equal(s.t, "2:1", fretPlacements.Frets[6].Label)
+	assert.Equal(s.t, 270.0, fretPlacements.Frets[6].Position)
 	return nil
 }
