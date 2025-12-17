@@ -45,10 +45,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 	switch request.QueryStringParameters["temper"] {
 	case "equal":
-		divisionsOfOctave := 31
-		if request.QueryStringParameters["divisions"] != "" {
-			divisionsOfOctave, err = strconv.Atoi(request.QueryStringParameters["divisions"])
-		}
+		divisionsOfOctave, err := strconv.Atoi(request.QueryStringParameters["divisions"])
 		if err != nil {
 			return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide number of divisions for equal temperament"}`}, nil
 		}
@@ -64,18 +61,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 		}
 		fretPlacements = h.quarterCommaMeantoneFretPlacements(scaleLength, extended)
 	case "":
-		var octaves = 1
-		if request.QueryStringParameters["octaves"] != "" {
-			octaves, err = strconv.Atoi(request.QueryStringParameters["octaves"])
-			if err != nil {
-				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid positive number for number of octaves worth of frets"}`}, nil
-			}
-		}
-		var mode = "Ionian"
-		if request.QueryStringParameters["mode"] != "" {
-			mode = request.QueryStringParameters["mode"]
-		}
-		fretPlacements = h.justIntonationFretPlacements(scaleLength, octaves, mode)
+		fretPlacements = h.justIntonationFretPlacements(scaleLength)
 	default:
 		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"invalid temper parameter"}`}, nil
 	}
@@ -95,49 +81,12 @@ func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
 	}
 }
 
-func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int, mode string) FretPlacements {
-	var intervalMap = map[string][][]uint{
-		"Ionian":     {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}},
-		"Dorian":     {{10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}, {9, 8}},
-		"Phrygian":   {{16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}, {9, 8}, {10, 9}},
-		"Lydian":     {{9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}},
-		"Mixolydian": {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
-		"Aeolian":    {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}},
-	}
-
-	var ratios = make([][]uint, 0)
-	var ratio = []uint{1, 1}
-
-	for i := 0; i < octaves; i++ {
-		for _, v := range intervalMap[mode] {
-			ratio = reduceFractonToLowestDenominator(
-				[]uint{
-					ratio[0] * v[0], ratio[1] * v[1],
-				})
-
-			ratios = append(ratios, ratio)
-		}
-	}
-
+func (h Handler) justIntonationFretPlacements(scaleLength float64) FretPlacements {
 	return FretPlacements{
 		System:      "ji",
-		Description: fmt.Sprintf("Fret positions based on 5-limit just intonation pure ratios and diatonic scale %s mode.", mode),
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+		Description: "Fret positions based on 5-limit just intonation pure ratios and diatonic scale.",
+		Frets:       h.ratiosToFretPlacements(scaleLength, [][]uint{{9, 8}, {5, 4}, {4, 3}, {45, 32}, {3, 2}, {5, 3}, {16, 9}, {15, 8}, {2, 1}}),
 	}
-}
-
-func reduceFractonToLowestDenominator(fraction []uint) []uint {
-	gcd := func(a, b uint) uint {
-		for b != 0 {
-			a, b = b, a%b
-		}
-		return a
-	}
-	g := gcd(fraction[0], fraction[1])
-	fraction[0] = fraction[0] / g
-	fraction[1] = fraction[1] / g
-
-	return fraction
 }
 
 func (h Handler) sazFretPlacements(scaleLength float64) FretPlacements {
