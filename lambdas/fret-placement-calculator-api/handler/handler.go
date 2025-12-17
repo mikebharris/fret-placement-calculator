@@ -45,7 +45,10 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 	switch request.QueryStringParameters["temper"] {
 	case "equal":
-		divisionsOfOctave, err := strconv.Atoi(request.QueryStringParameters["divisions"])
+		divisionsOfOctave := 31
+		if request.QueryStringParameters["divisions"] != "" {
+			divisionsOfOctave, err = strconv.Atoi(request.QueryStringParameters["divisions"])
+		}
 		if err != nil {
 			return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide number of divisions for equal temperament"}`}, nil
 		}

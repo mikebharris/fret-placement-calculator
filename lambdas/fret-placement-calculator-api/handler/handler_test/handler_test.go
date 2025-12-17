@@ -241,7 +241,7 @@ func Test_shouldReturnPythagoreanPlacementsWithProvidedScaleLength(t *testing.T)
 	assert.Equal(t, handler.Fret{Label: "256:243", Position: 27.42}, fretPlacements.Frets[0])
 }
 
-func Test_ShouldReturnErrorIfNumberOfDivisionsForEqualTemperamentIsNotProvided(t *testing.T) {
+func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
@@ -249,7 +249,15 @@ func Test_ShouldReturnErrorIfNumberOfDivisionsForEqualTemperamentIsNotProvided(t
 
 	// Then
 	assert.Nil(t, err)
-	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide number of divisions for equal temperament"}`}, response)
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	fretPlacements := handler.FretPlacements{}
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, float64(540), fretPlacements.ScaleLength)
+	assert.Equal(t, "31-TET", fretPlacements.System)
+	assert.Equal(t, "Fret positions for 31-tone equal temperament.", fretPlacements.Description)
+	assert.Equal(t, 31, len(fretPlacements.Frets))
 }
 
 func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T) {
