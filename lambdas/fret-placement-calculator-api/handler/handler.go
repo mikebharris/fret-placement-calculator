@@ -111,7 +111,7 @@ func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int, 
 
 	for i := 0; i < octaves; i++ {
 		for _, v := range intervalMap[mode] {
-			ratio = reduceFractonToLowestDenominator(
+			ratio = fractionToLowestDenominator(
 				[]uint{
 					ratio[0] * v[0], ratio[1] * v[1],
 				})
@@ -127,7 +127,7 @@ func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int, 
 	}
 }
 
-func reduceFractonToLowestDenominator(fraction []uint) []uint {
+func fractionToLowestDenominator(fraction []uint) []uint {
 	gcd := func(a, b uint) uint {
 		for b != 0 {
 			a, b = b, a%b
