@@ -59,9 +59,9 @@ func equalTemperament(scaleLength float64, divisionsOfOctave uint, numberOfFrets
 }
 
 func justIntonation(scaleLength float64) {
-	var ratios = [][]uint{{16, 15}, {10, 9}, {9, 8}, {6, 5}, {5, 4}, {35, 25}, {4, 3}, {45, 32}, {3, 2}, {8, 5}, {5, 3}, {16, 9}, {9, 5}, {15, 8}, {2, 1}}
+	var ratios = [][]uint{{9, 8}, {5, 4}, {4, 3}, {3, 2}, {5, 3}, {9, 5}, {15, 8}, {2, 1}, {9, 4}, {5, 2}, {8, 3}, {3, 1}, {10, 3}, {32, 9}}
 
-	fmt.Println("Calculating based on just intonation pure ratios....")
+	fmt.Println("Calculating based on just intonation pure ratios for scale length of", scaleLength, "....")
 	computeScaleFromRatios(scaleLength, ratios)
 }
 
