@@ -39,9 +39,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"a numeric scaleLength greater than zero is required"}`}, nil
 	}
 
-	var fretPlacements = FretPlacements{
-		ScaleLength: scaleLength,
-	}
+	var fretPlacements FretPlacements
 
 	switch request.QueryStringParameters["temper"] {
 	case "equal":
@@ -133,10 +131,9 @@ func fractionToLowestDenominator(fraction []uint) []uint {
 			a, b = b, a%b
 		}
 		return a
-	}
-	g := gcd(fraction[0], fraction[1])
-	fraction[0] = fraction[0] / g
-	fraction[1] = fraction[1] / g
+	}(fraction[0], fraction[1])
+	fraction[0] = fraction[0] / gcd
+	fraction[1] = fraction[1] / gcd
 
 	return fraction
 }
