@@ -404,10 +404,27 @@ func Test_shouldReturnPythagoreanPlacementsWithProvidedScaleLength(t *testing.T)
 	fretPlacements := handler.FretPlacements{}
 	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
 	assert.Equal(t, float64(540), fretPlacements.ScaleLength)
-	assert.Equal(t, "pythagorean", fretPlacements.System)
+	assert.Equal(t, "Pythagorean", fretPlacements.System)
 	assert.Equal(t, "Fret positions based on 3-limit Pythagorean ratios.", fretPlacements.Description)
 	assert.Equal(t, 13, len(fretPlacements.Frets))
-	assert.Equal(t, handler.Fret{Label: "256:243", Position: 27.42}, fretPlacements.Frets[0])
+
+	assert.Equal(t, "256:243", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "9:8", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "32:27", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "81:64", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "1024:729", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "729:512", fretPlacements.Frets[6].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[7].Label)
+	assert.Equal(t, "128:81", fretPlacements.Frets[8].Label)
+	assert.Equal(t, "27:16", fretPlacements.Frets[9].Label)
+	assert.Equal(t, "16:9", fretPlacements.Frets[10].Label)
+	assert.Equal(t, "243:128", fretPlacements.Frets[11].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[12].Label)
+
+	assert.Equal(t, "27.42", fmt.Sprintf("%.2f", fretPlacements.Frets[0].Position))
+	assert.Equal(t, "60.00", fmt.Sprintf("%.2f", fretPlacements.Frets[1].Position))
+	assert.Equal(t, "84.38", fmt.Sprintf("%.2f", fretPlacements.Frets[2].Position))
 }
 
 func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {

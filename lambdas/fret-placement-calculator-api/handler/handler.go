@@ -87,7 +87,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
 	return FretPlacements{
-		System:      "pythagorean",
+		System:      "Pythagorean",
 		Description: "Fret positions based on 3-limit Pythagorean ratios.",
 		Frets:       h.ratiosToFretPlacements(scaleLength, [][]uint{{256, 243}, {9, 8}, {32, 27}, {81, 64}, {4, 3}, {1024, 729}, {729, 512}, {3, 2}, {128, 81}, {27, 16}, {16, 9}, {243, 128}, {2, 1}}),
 	}
