@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -86,11 +87,54 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 }
 
 func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
+	// divide by 3:2 = 4/9 * 2/3 = 16/27 = 2^3 : 3^3 = 16/27
+	// divide by 3:2 = 2/3 * 2/3 = 4/9 - octave reduce to 16:9
+	// divide by 3:2 = 2:3 - octave reduce to 4:3
+	// fundamental = 1,1
+	// multiply by 3:2 = 3,2
+	// multiply by 3:2 = 9,4 - octave reduce to 9:8
+	// multiply by 3:2 = 27:8 = 3^3:2^3 - octave reduce to 27:16
+	// multiply by 3:2 = 81:16 - octave reduce to 81:64 - 3^4:2^4 = 81:16
+
+	var untemperedFifth = []uint{3, 2}
+	var fifthsFromTonic = 6
+	var ratiosFromFundamental [][]uint
+
+	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
+		if i < 0 {
+			t := math.Pow(float64(untemperedFifth[1]), math.Abs(float64(i)))
+			b := math.Pow(float64(untemperedFifth[0]), math.Abs(float64(i)))
+			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
+		} else if i > 0 {
+			t := math.Pow(float64(untemperedFifth[0]), float64(i))
+			b := math.Pow(float64(untemperedFifth[1]), float64(i))
+			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
+		}
+	}
+
+	ratiosFromFundamental = append(ratiosFromFundamental, []uint{2, 1})
+
+	slices.SortFunc(ratiosFromFundamental, func(x, y []uint) int {
+		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
+	})
+
 	return FretPlacements{
 		System:      "Pythagorean",
 		Description: "Fret positions based on 3-limit Pythagorean ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, [][]uint{{256, 243}, {9, 8}, {32, 27}, {81, 64}, {4, 3}, {1024, 729}, {729, 512}, {3, 2}, {128, 81}, {27, 16}, {16, 9}, {243, 128}, {2, 1}}),
+		Frets:       h.ratiosToFretPlacements(scaleLength, ratiosFromFundamental),
 	}
+}
+
+func octaveReduceIntegerRatio(ratio []uint) []uint {
+	for ratio[0]/ratio[1] >= 2.0 || ratio[0]/ratio[1] < 1.0 {
+		if ratio[0]/ratio[1] < 1.0 {
+			ratio[0] *= 2
+		}
+		if ratio[0]/ratio[1] >= 2.0 {
+			ratio[1] *= 2
+		}
+	}
+	return ratio
 }
 
 func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int, mode string) FretPlacements {
@@ -134,7 +178,6 @@ func fractionToLowestDenominator(fraction []uint) []uint {
 	}(fraction[0], fraction[1])
 	fraction[0] = fraction[0] / gcd
 	fraction[1] = fraction[1] / gcd
-
 	return fraction
 }
 
@@ -166,7 +209,7 @@ func (h Handler) quarterCommaMeantoneFretPlacements(scaleLength float64, extendS
 
 	var ratiosOfNotesToFundamental []float64
 	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduce(math.Pow(temperedFifth, float64(i))))
+		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduceFloat(math.Pow(temperedFifth, float64(i))))
 	}
 
 	slices.Sort(ratiosOfNotesToFundamental)
@@ -239,7 +282,7 @@ func (h Handler) equalTemperamentFretPlacements(scaleLength float64, divisionsOf
 	return fretPlacements
 }
 
-func octaveReduce(ratio float64) float64 {
+func octaveReduceFloat(ratio float64) float64 {
 	for ratio >= 2.0 || ratio < 1.0 {
 		if ratio >= 2.0 {
 			ratio /= 2.0
