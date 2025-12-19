@@ -33,6 +33,41 @@ type FretPlacements struct {
 	Frets       []Fret  `json:"frets"`
 }
 
+type Ratio struct {
+	Numerator   uint
+	Denominator uint
+	Name        string
+}
+
+var JustRatios = []Ratio{
+	{1, 1, "Perfect Unison"},
+	{81, 80, "Grave Unison"},
+	{128, 125, "Dieses (Diminished Second)"},
+	{25, 24, "Lesser Chromatic Semitone"},
+	{256, 243, "Pythagorean Minor Second"},
+	{135, 128, "Greater Chromatic Semitone"},
+	{27, 25, "Acute Minor Second"},
+	{16, 15, "Minor Second"},
+	{10, 9, "Just (Lesser) Major Second"},
+	{9, 8, "Pythagorean (Greater) Major Second"},
+	{6, 5, "Minor Third"},
+	{5, 4, "Major Third"},
+	{32, 27, "Diminished Fourth"},
+	{4, 3, "Perfect Fourth"},
+	{64, 45, "Diminished Fifth"},
+	{45, 32, "Augmented Fourth"},
+	{40, 27, "Grave Fifth"},
+	{3, 2, "Perfect Fifth"},
+	{8, 5, "Minor Sixth"},
+	{5, 3, "Major Sixth"},
+	{27, 16, "Pythagorean Major Sixth"},
+	{16, 9, "Pythagorean (Lesser) Minor Seventh"},
+	{9, 5, "Just (Greater) Minor Seventh"},
+	{15, 8, "Just Major Seventh"},
+	{243, 128, "Pythagorean Major Seventh"},
+	{2, 1, "Perfect Octave"},
+}
+
 func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 
 	scaleLength, err := strconv.ParseFloat(request.QueryStringParameters["scaleLength"], 64)
@@ -101,17 +136,15 @@ func computePythagoreanRatios() [][]uint {
 	// multiply by 3:2 = 81:16 - octave reduce to 81:64 - 3^4:2^4 = 81:16
 
 	var thirdPartial = []uint{3, 2}
-	var thirdPartialsFromTonic = 6
+	var thirdPartialsFromTonicToCompute = 6
 	var ratiosFromFundamental [][]uint
 
-	for i := -thirdPartialsFromTonic; i <= thirdPartialsFromTonic; i++ {
+	for i := -thirdPartialsFromTonicToCompute; i <= thirdPartialsFromTonicToCompute; i++ {
+		t := math.Pow(float64(thirdPartial[0]), math.Abs(float64(i)))
+		b := math.Pow(float64(thirdPartial[1]), math.Abs(float64(i)))
 		if i < 0 {
-			t := math.Pow(float64(thirdPartial[1]), math.Abs(float64(i)))
-			b := math.Pow(float64(thirdPartial[0]), math.Abs(float64(i)))
-			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
+			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(b), uint(t)}))
 		} else if i > 0 {
-			t := math.Pow(float64(thirdPartial[0]), float64(i))
-			b := math.Pow(float64(thirdPartial[1]), float64(i))
 			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
 		}
 	}
@@ -258,41 +291,6 @@ func (h Handler) quarterCommaMeantoneFretPlacements(scaleLength float64, extendS
 		ScaleLength: scaleLength,
 		Frets:       frets,
 	}
-}
-
-type Ratio struct {
-	Numerator   uint
-	Denominator uint
-	Name        string
-}
-
-var JustRatios = []Ratio{
-	{1, 1, "Perfect Unison"},
-	{81, 80, "Grave Unison"},
-	{128, 125, "Dieses (Diminished Second)"},
-	{25, 24, "Lesser Chromatic Semitone"},
-	{256, 243, "Pythagorean Minor Second"},
-	{135, 128, "Greater Chromatic Semitone"},
-	{27, 25, "Acute Minor Second"},
-	{16, 15, "Minor Second"},
-	{10, 9, "Just (Lesser) Major Second"},
-	{9, 8, "Pythagorean (Greater) Major Second"},
-	{6, 5, "Minor Third"},
-	{5, 4, "Major Third"},
-	{32, 27, "Diminished Fourth"},
-	{4, 3, "Perfect Fourth"},
-	{64, 45, "Diminished Fifth"},
-	{45, 32, "Augmented Fourth"},
-	{40, 27, "Grave Fifth"},
-	{3, 2, "Perfect Fifth"},
-	{8, 5, "Minor Sixth"},
-	{5, 3, "Major Sixth"},
-	{27, 16, "Pythagorean Major Sixth"},
-	{16, 9, "Pythagorean (Lesser) Minor Seventh"},
-	{9, 5, "Just (Greater) Minor Seventh"},
-	{15, 8, "Just Major Seventh"},
-	{243, 128, "Pythagorean Major Seventh"},
-	{2, 1, "Perfect Octave"},
 }
 
 func (h Handler) ratiosToFretPlacements(scaleLength float64, ratios [][]uint) []Fret {
