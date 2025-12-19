@@ -96,18 +96,18 @@ func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
 	// multiply by 3:2 = 27:8 = 3^3:2^3 - octave reduce to 27:16
 	// multiply by 3:2 = 81:16 - octave reduce to 81:64 - 3^4:2^4 = 81:16
 
-	var untemperedFifth = []uint{3, 2}
-	var fifthsFromTonic = 6
+	var thirdPartial = []uint{3, 2}
+	var thirdPartialsFromTonic = 6
 	var ratiosFromFundamental [][]uint
 
-	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
+	for i := -thirdPartialsFromTonic; i <= thirdPartialsFromTonic; i++ {
 		if i < 0 {
-			t := math.Pow(float64(untemperedFifth[1]), math.Abs(float64(i)))
-			b := math.Pow(float64(untemperedFifth[0]), math.Abs(float64(i)))
+			t := math.Pow(float64(thirdPartial[1]), math.Abs(float64(i)))
+			b := math.Pow(float64(thirdPartial[0]), math.Abs(float64(i)))
 			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
 		} else if i > 0 {
-			t := math.Pow(float64(untemperedFifth[0]), float64(i))
-			b := math.Pow(float64(untemperedFifth[1]), float64(i))
+			t := math.Pow(float64(thirdPartial[0]), float64(i))
+			b := math.Pow(float64(thirdPartial[1]), float64(i))
 			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
 		}
 	}
