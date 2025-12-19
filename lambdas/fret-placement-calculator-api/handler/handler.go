@@ -70,11 +70,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid positive number for number of octaves worth of frets"}`}, nil
 			}
 		}
-		var mode = "Ionian"
-		if request.QueryStringParameters["mode"] != "" {
-			mode = request.QueryStringParameters["mode"]
-		}
-		fretPlacements = h.justIntonationFretPlacements(scaleLength, octaves, mode)
+		fretPlacements = h.justIntonationFretPlacements(scaleLength, octaves)
 	default:
 		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"invalid temper parameter"}`}, nil
 	}
@@ -87,6 +83,14 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 }
 
 func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
+	return FretPlacements{
+		System:      "Pythagorean",
+		Description: "Fret positions based on 3-limit Pythagorean ratios.",
+		Frets:       h.ratiosToFretPlacements(scaleLength, computePythagoreanRatios()),
+	}
+}
+
+func computePythagoreanRatios() [][]uint {
 	// divide by 3:2 = 4/9 * 2/3 = 16/27 = 2^3 : 3^3 = 16/27
 	// divide by 3:2 = 2/3 * 2/3 = 4/9 - octave reduce to 16:9
 	// divide by 3:2 = 2:3 - octave reduce to 4:3
@@ -117,12 +121,7 @@ func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
 	slices.SortFunc(ratiosFromFundamental, func(x, y []uint) int {
 		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
 	})
-
-	return FretPlacements{
-		System:      "Pythagorean",
-		Description: "Fret positions based on 3-limit Pythagorean ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratiosFromFundamental),
-	}
+	return ratiosFromFundamental
 }
 
 func octaveReduceIntegerRatio(ratio []uint) []uint {
@@ -137,36 +136,46 @@ func octaveReduceIntegerRatio(ratio []uint) []uint {
 	return ratio
 }
 
-func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int, mode string) FretPlacements {
-	var intervalMap = map[string][][]uint{
-		"Lydian":     {{9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}},
-		"Ionian":     {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}},
-		"Mixolydian": {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
-		"Dorian":     {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
-		"Aeolian":    {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}},
-		"Phrygian":   {{16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}},
-		"Locrian":    {{16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}},
-	}
+func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int) FretPlacements {
+	// 	m2 : 256/243 → 16/15
+	//	M2 : 9/8 → 10/9
+	//	m3 : 32/27 → 6/5
+	//	M3 : 81/64 → 5/4
+	//	m6 : 128/81 → 8/5
+	//	M6 : 27/16 → 5/3
+	//	m7 : 16/9 → 9/5
+	//	M7 : 243/128 → 15/8
 
-	var ratios = make([][]uint, 0)
-	var ratio = []uint{1, 1}
+	var acuteUnison = []uint{81, 80}
+	var graveUnison = []uint{80, 81}
 
-	for i := 0; i < octaves; i++ {
-		for _, v := range intervalMap[mode] {
-			ratio = fractionToLowestDenominator(
-				[]uint{
-					ratio[0] * v[0], ratio[1] * v[1],
-				})
+	var ratios [][]uint
 
+	for _, ratio := range computePythagoreanRatios() {
+		if ratioIsPerfect(ratio) {
 			ratios = append(ratios, ratio)
+			continue
+		}
+
+		graveRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * acuteUnison[0], ratio[1] * acuteUnison[1]}))
+		acuteRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * graveUnison[0], ratio[1] * graveUnison[1]}))
+
+		if graveRatio[1] < acuteRatio[1] {
+			ratios = append(ratios, graveRatio)
+		} else {
+			ratios = append(ratios, acuteRatio)
 		}
 	}
 
 	return FretPlacements{
 		System:      "ji",
-		Description: fmt.Sprintf("Fret positions based on 5-limit just intonation pure ratios and diatonic scale %s mode.", mode),
+		Description: fmt.Sprintf("Fret positions based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios."),
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
+}
+
+func ratioIsPerfect(ratio []uint) bool {
+	return (ratio[0] == 1 && ratio[1] == 1) || (ratio[0] == 4 && ratio[1] == 3) || (ratio[0] == 3 && ratio[1] == 2) || (ratio[0] == 2 && ratio[1] == 1)
 }
 
 func fractionToLowestDenominator(fraction []uint) []uint {
@@ -251,6 +260,41 @@ func (h Handler) quarterCommaMeantoneFretPlacements(scaleLength float64, extendS
 	}
 }
 
+type Ratio struct {
+	Numerator   uint
+	Denominator uint
+	Name        string
+}
+
+var JustRatios = []Ratio{
+	{1, 1, "Perfect Unison"},
+	{81, 80, "Grave Unison"},
+	{128, 125, "Dieses (Diminished Second)"},
+	{25, 24, "Lesser Chromatic Semitone"},
+	{256, 243, "Pythagorean Minor Second"},
+	{135, 128, "Greater Chromatic Semitone"},
+	{27, 25, "Acute Minor Second"},
+	{16, 15, "Minor Second"},
+	{10, 9, "Just (Lesser) Major Second"},
+	{9, 8, "Pythagorean (Greater) Major Second"},
+	{6, 5, "Minor Third"},
+	{5, 4, "Major Third"},
+	{32, 27, "Diminished Fourth"},
+	{4, 3, "Perfect Fourth"},
+	{64, 45, "Diminished Fifth"},
+	{45, 32, "Augmented Fourth"},
+	{40, 27, "Grave Fifth"},
+	{3, 2, "Perfect Fifth"},
+	{8, 5, "Minor Sixth"},
+	{5, 3, "Major Sixth"},
+	{27, 16, "Pythagorean Major Sixth"},
+	{16, 9, "Pythagorean (Lesser) Minor Seventh"},
+	{9, 5, "Just (Greater) Minor Seventh"},
+	{15, 8, "Just Major Seventh"},
+	{243, 128, "Pythagorean Major Seventh"},
+	{2, 1, "Perfect Octave"},
+}
+
 func (h Handler) ratiosToFretPlacements(scaleLength float64, ratios [][]uint) []Fret {
 	var frets []Fret
 	for _, ratio := range ratios {
@@ -258,9 +302,21 @@ func (h Handler) ratiosToFretPlacements(scaleLength float64, ratios [][]uint) []
 		frets = append(frets, Fret{
 			Label:    fmt.Sprintf("%d:%d", ratio[0], ratio[1]),
 			Position: distanceFromNut,
+			Comment:  intervalNameFromRatio(ratio),
 		})
 	}
 	return frets
+}
+
+func intervalNameFromRatio(ratio []uint) string {
+	return func() string {
+		for _, justRatio := range JustRatios {
+			if justRatio.Numerator == ratio[0] && justRatio.Denominator == ratio[1] {
+				return justRatio.Name
+			}
+		}
+		return ""
+	}()
 }
 
 func (h Handler) equalTemperamentFretPlacements(scaleLength float64, divisionsOfOctave int) FretPlacements {

@@ -26,7 +26,6 @@ tension of the string, type of instrument, etc.
 > | `temper`          | optional | string    |          | Temper the scale (meantone, pythagorean, equal, or saz) |
 > | `extendMeantone`  | optional | bool      | false    | Extend the meantone scale                               |
 > | `octaveDivisions` | optional | int       | 31       | Number of divisions of the octave for equal temperament |
-> | `mode`            | optional | int       | "Ionian" | Musical mode (implemented for just intonation)          |
 > | `octaves`         | optional | int       | 1        | Number of octaves of frets to compute                   |
 
 ##### Responses
