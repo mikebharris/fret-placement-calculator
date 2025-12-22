@@ -20,13 +20,14 @@ tension of the string, type of instrument, etc.
 
 ##### Parameters
 
-> | name              | type     | data type | default  | description                                             |
-> |-------------------|----------|-----------|----------|---------------------------------------------------------|
-> | `scaleLength`     | required | float64   |          | The scale length from nut to bridge (saddle)            |
-> | `temper`          | optional | string    |          | Temper the scale (meantone, pythagorean, equal, or saz) |
-> | `extendMeantone`  | optional | bool      | false    | Extend the meantone scale                               |
-> | `octaveDivisions` | optional | int       | 31       | Number of divisions of the octave for equal temperament |
-> | `octaves`         | optional | int       | 1        | Number of octaves of frets to compute                   |
+> | name              | type     | data type | default | description                                                                                                 |
+> |-------------------|----------|-----------|---------|-------------------------------------------------------------------------------------------------------------|
+> | `scaleLength`     | required | float64   |         | The scale length from nut to bridge (saddle)                                                                |
+> | `tuningSystem`    | optional | string    | just    | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
+> | `diatonicMode`    | optional | string    | Ionian  | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
+> | `extendMeantone`  | optional | bool      | false   | Extend the meantone scale                                                                                   |
+> | `octaveDivisions` | optional | int       | 31      | Number of divisions of the octave for equal temperament                                                     |
+> | `octaves`         | optional | int       | 1       | Number of octaves of frets to compute                                                                       |
 
 ##### Responses
 
@@ -37,7 +38,7 @@ tension of the string, type of instrument, etc.
 
 ##### Example cURL
 
-Compute just intonation for a scale length of 546mm:
+Compute Ptolemy's Intense Diatonic tuning for a scale length of 546mm:
 
 > ```shell
 >  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=546
@@ -45,8 +46,8 @@ Compute just intonation for a scale length of 546mm:
 
 ````json
 {
-  "system": "ji",
-  "description": "Fret positions based on 5-limit just intonation pure ratios and diatonic scale.",
+  "system": "5-limit Just Intonation",
+  "description": "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
   "scaleLength": 546,
   "frets": [
     {

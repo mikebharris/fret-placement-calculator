@@ -41,26 +41,29 @@ type Ratio struct {
 
 var JustRatios = []Ratio{
 	{1, 1, "Perfect Unison"},
+	{225, 224, "Septimal Kleisma"},
 	{81, 80, "Grave Unison"},
 	{128, 125, "Dieses (Diminished Second)"},
-	{18, 17, "Septimal Chromatic Semitone"},
 	{25, 24, "Just (Lesser) Chromatic Semitone"},
-	{21, 20, "Septimal Chromatic Semitone"},
 	{256, 243, "Pythagorean Minor Second"},
 	{135, 128, "Greater Chromatic Semitone"},
 	{27, 25, "Acute Minor Second"},
 	{16, 15, "Minor Second"},
+	{15, 14, "Septimal Minor Second"},
 	{10, 9, "Just (Lesser) Major Second"},
 	{9, 8, "Pythagorean (Greater) Major Second"},
+	{8, 7, "Septimal Major Second"},
 	{6, 5, "Minor Third"},
 	{5, 4, "Major Third"},
 	{32, 27, "Diminished Fourth"},
 	{81, 64, "Pythagorean Major Third"},
 	{4, 3, "Perfect Fourth"},
-	{64, 45, "Diminished Fifth"},
+	{45, 32, "Augmented Fourth"},
+	{7, 5, "Septimal Augmented Fourth"},
 	{1024, 729, "Pythagorean Diminished Fifth"},
 	{729, 512, "Pythagorean Augmented Fifth"},
-	{45, 32, "Augmented Fourth"},
+	{64, 45, "Diminished Fifth"},
+	{10, 7, "Septimal Diminished Fifth"},
 	{40, 27, "Grave Fifth"},
 	{3, 2, "Perfect Fifth"},
 	{8, 5, "Just Minor Sixth"},
@@ -84,7 +87,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 	var fretPlacements FretPlacements
 
-	switch request.QueryStringParameters["temper"] {
+	switch request.QueryStringParameters["tuningSystem"] {
 	case "equal":
 		divisionsOfOctave := 31
 		if request.QueryStringParameters["divisions"] != "" {
@@ -93,18 +96,20 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 		if err != nil {
 			return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide number of divisions for equal temperament"}`}, nil
 		}
-		fretPlacements = h.equalTemperamentFretPlacements(scaleLength, divisionsOfOctave)
+		fretPlacements = h.fretPlacementsForEqualTemperamentTuning(scaleLength, divisionsOfOctave)
 	case "saz":
-		fretPlacements = h.sazFretPlacements(scaleLength)
+		fretPlacements = h.fretPlacementsForSazTuning(scaleLength)
 	case "pythagorean":
-		fretPlacements = h.pythagoreanFretPlacements(scaleLength)
+		fretPlacements = h.fretPlacementsForPythagoreanTuning(scaleLength)
 	case "meantone":
 		extended := false
 		if request.QueryStringParameters["extended"] != "" {
 			extended, _ = strconv.ParseBool(request.QueryStringParameters["extended"])
 		}
-		fretPlacements = h.quarterCommaMeantoneFretPlacements(scaleLength, extended)
+		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, extended)
 	case "":
+		fallthrough
+	case "just":
 		var octaves = 1
 		if request.QueryStringParameters["octaves"] != "" {
 			octaves, err = strconv.Atoi(request.QueryStringParameters["octaves"])
@@ -112,7 +117,16 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid positive number for number of octaves worth of frets"}`}, nil
 			}
 		}
-		fretPlacements = h.justIntonationFretPlacements(scaleLength, octaves)
+		if request.QueryStringParameters["diatonicMode"] != "" {
+			mode := "Ionian"
+			mode = request.QueryStringParameters["diatonicMode"]
+			if mode != "Lydian" && mode != "Ionian" && mode != "Mixolydian" && mode != "Dorian" && mode != "Aeolian" && mode != "Phrygian" && mode != "Locrian" {
+				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid mode for the diatonic scale"}`}, nil
+			}
+			fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, octaves, mode)
+		} else {
+			fretPlacements = h.fretPlacementsFor5LimitJustChromaticTuning(scaleLength, octaves)
+		}
 	default:
 		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"invalid temper parameter"}`}, nil
 	}
@@ -124,7 +138,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 
 }
 
-func (h Handler) pythagoreanFretPlacements(scaleLength float64) FretPlacements {
+func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) FretPlacements {
 	return FretPlacements{
 		System:      "Pythagorean",
 		Description: "Fret positions based on 3-limit Pythagorean ratios.",
@@ -176,7 +190,7 @@ func octaveReduceIntegerRatio(ratio []uint) []uint {
 	return ratio
 }
 
-func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int) FretPlacements {
+func (h Handler) fretPlacementsFor5LimitJustChromaticTuning(scaleLength float64, octaves int) FretPlacements {
 	// 	m2 : 256/243 → 16/15
 	//	M2 : 9/8 → 10/9
 	//	m3 : 32/27 → 6/5
@@ -208,8 +222,68 @@ func (h Handler) justIntonationFretPlacements(scaleLength float64, octaves int) 
 	}
 
 	return FretPlacements{
-		System:      "ji",
-		Description: fmt.Sprintf("Fret positions based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios."),
+		System:      "5-limit Just Intonation",
+		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios."),
+		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+	}
+}
+
+func (h Handler) fretPlacementsFor7LimitJustChromaticTuning(scaleLength float64, octaves int) FretPlacements {
+	// 	m2 : 256/243 → 16/15
+	//	M2 : 9/8 → 10/9
+	//	m3 : 32/27 → 6/5
+	//	M3 : 81/64 → 5/4
+	//	m6 : 128/81 → 8/5
+	//	M6 : 27/16 → 5/3
+	//	m7 : 16/9 → 9/5
+	//	M7 : 243/128 → 15/8
+
+	var acuteUnison = []uint{81, 80}
+	var graveUnison = []uint{80, 81}
+
+	var septimalKleisma = []uint{225, 224}
+
+	var ratios [][]uint
+
+	for _, ratio := range computePythagoreanRatios() {
+		if ratioIsPerfect(ratio) {
+			ratios = append(ratios, ratio)
+			continue
+		}
+
+		graveRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * acuteUnison[0], ratio[1] * acuteUnison[1]}))
+		acuteRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * graveUnison[0], ratio[1] * graveUnison[1]}))
+
+		if graveRatio[1] < acuteRatio[1] {
+			ratios = append(ratios, graveRatio)
+		} else {
+			ratios = append(ratios, acuteRatio)
+		}
+	}
+
+	for i, ratio := range ratios {
+		graveKleismaRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * septimalKleisma[0], ratio[1] * septimalKleisma[1]}))
+		acuteKleismaRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * septimalKleisma[1], ratio[1] * septimalKleisma[0]}))
+		fmt.Println(acuteKleismaRatio)
+		fmt.Println(graveKleismaRatio)
+		if graveKleismaRatio[1] < acuteKleismaRatio[1] {
+			if graveKleismaRatio[0] < ratios[i][0] {
+				ratios[i][0] = graveKleismaRatio[0]
+				ratios[i][1] = graveKleismaRatio[1]
+			}
+		} else {
+			if acuteKleismaRatio[0] < ratios[i][0] {
+				ratios[i][0] = acuteKleismaRatio[0]
+				ratios[i][1] = acuteKleismaRatio[1]
+			}
+		}
+	}
+
+	fmt.Println(ratios)
+
+	return FretPlacements{
+		System:      "7-limit Just Intonation",
+		Description: fmt.Sprintf("Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from applying syntonic comma and septimal kleisma to Pythagorean ratios."),
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
 }
@@ -230,7 +304,39 @@ func fractionToLowestDenominator(fraction []uint) []uint {
 	return fraction
 }
 
-func (h Handler) sazFretPlacements(scaleLength float64) FretPlacements {
+func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) FretPlacements {
+	var intervalMap = map[string][][]uint{
+		"Lydian":     {{9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}},
+		"Ionian":     {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}},
+		"Mixolydian": {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
+		"Dorian":     {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
+		"Aeolian":    {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}, {9, 8}, {10, 9}},
+		"Phrygian":   {{16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}},
+		"Locrian":    {{16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}},
+	}
+
+	var ratios = make([][]uint, 0)
+	var ratio = []uint{1, 1}
+
+	for i := 0; i < octaves; i++ {
+		for _, v := range intervalMap[mode] {
+			ratio = fractionToLowestDenominator(
+				[]uint{
+					ratio[0] * v[0], ratio[1] * v[1],
+				})
+
+			ratios = append(ratios, ratio)
+		}
+	}
+
+	return FretPlacements{
+		System:      "Ptolemy",
+		Description: fmt.Sprintf("Fret positions for Ptolemy's 5-limit intense diatonic scale in %s mode.", mode),
+		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+	}
+}
+
+func (h Handler) fretPlacementsForSazTuning(scaleLength float64) FretPlacements {
 	// as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
 	return FretPlacements{
 		System:      "saz",
@@ -240,7 +346,7 @@ func (h Handler) sazFretPlacements(scaleLength float64) FretPlacements {
 	}
 }
 
-func (h Handler) quarterCommaMeantoneFretPlacements(scaleLength float64, extendScale bool) FretPlacements {
+func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) FretPlacements {
 	syntonicComma := 81.0 / 80.0
 	fractionOfSyntonicCommaToTemperFifthsBy := 0.25
 	temperedFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fractionOfSyntonicCommaToTemperFifthsBy)
@@ -324,7 +430,7 @@ func intervalNameFromRatio(ratio []uint) string {
 	}()
 }
 
-func (h Handler) equalTemperamentFretPlacements(scaleLength float64, divisionsOfOctave int) FretPlacements {
+func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) FretPlacements {
 	system := fmt.Sprintf("%d-TET", divisionsOfOctave)
 	fretPlacements := FretPlacements{
 		System:      system,

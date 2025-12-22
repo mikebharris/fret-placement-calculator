@@ -27,7 +27,7 @@ func TestFeatures(t *testing.T) {
 		},
 		ScenarioInitializer: func(ctx *godog.ScenarioContext) {
 			ctx.Step(`^I request where to put the frets for a scale length of (\d+)$`, steps.iRequestWhereToPutTheFretsForAScaleLengthOf)
-			ctx.Step(`^I am provided with the fret placements for Just Intonation$`, steps.iAmProvidedWithTheFretPlacementsForJustIntonation)
+			ctx.Step(`^I am provided with the fret placements for 5-limit just intonation chromatic scale$`, steps.iAmProvidedWithTheFretPlacementsFor5LimitChromaticJustIntonationTuning)
 		},
 		Options: &godog.Options{
 			Format:   "pretty",
@@ -111,7 +111,7 @@ type FretPlacements struct {
 	Frets       []Fret  `json:"frets"`
 }
 
-func (s *steps) iAmProvidedWithTheFretPlacementsForJustIntonation() error {
+func (s *steps) iAmProvidedWithTheFretPlacementsFor5LimitChromaticJustIntonationTuning() error {
 	assert.Equal(s.t, responseFromLambda.Headers["Content-Type"], "application/json")
 	assert.Equal(s.t, http.StatusOK, responseFromLambda.StatusCode)
 
@@ -120,14 +120,14 @@ func (s *steps) iAmProvidedWithTheFretPlacementsForJustIntonation() error {
 		return fmt.Errorf("unmarshalling result: %s", err)
 	}
 
-	assert.Equal(s.t, "ji", fretPlacements.System)
+	assert.Equal(s.t, "5-limit Just Intonation", fretPlacements.System)
 	assert.Equal(s.t, 540.0, fretPlacements.ScaleLength)
-	assert.Equal(s.t, 7, len(fretPlacements.Frets))
+	assert.Equal(s.t, 13, len(fretPlacements.Frets))
 
-	assert.Equal(s.t, "9:8", fretPlacements.Frets[0].Label)
-	assert.Equal(s.t, 60.00, fretPlacements.Frets[0].Position)
+	assert.Equal(s.t, "10:9", fretPlacements.Frets[1].Label)
+	assert.Equal(s.t, 54.00, fretPlacements.Frets[1].Position)
 
-	assert.Equal(s.t, "2:1", fretPlacements.Frets[6].Label)
-	assert.Equal(s.t, 270.0, fretPlacements.Frets[6].Position)
+	assert.Equal(s.t, "2:1", fretPlacements.Frets[12].Label)
+	assert.Equal(s.t, 270.0, fretPlacements.Frets[12].Position)
 	return nil
 }

@@ -14,7 +14,7 @@ import (
 
 var headers = map[string]string{"Content-Type": "application/json"}
 
-func Test_shouldReturnJustIntonationPlacementsWithProvidedScaleLengthAndIntervalNames(t *testing.T) {
+func Test_shouldReturnFretPlacementsForAChromaticFiveLimitJustIntonationScale(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
@@ -29,8 +29,8 @@ func Test_shouldReturnJustIntonationPlacementsWithProvidedScaleLengthAndInterval
 	var fretPlacements handler.FretPlacements
 	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
 	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
-	assert.Equal(t, "ji", fretPlacements.System)
-	assert.Equal(t, "Fret positions based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.", fretPlacements.Description)
+	assert.Equal(t, "5-limit Just Intonation", fretPlacements.System)
+	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.", fretPlacements.Description)
 	assert.Equal(t, 13, len(fretPlacements.Frets))
 
 	assert.Equal(t, "16:15", fretPlacements.Frets[0].Label)
@@ -57,6 +57,209 @@ func Test_shouldReturnJustIntonationPlacementsWithProvidedScaleLengthAndInterval
 	assert.Equal(t, 252.0, fretPlacements.Frets[11].Position)
 	assert.Equal(t, "2:1", fretPlacements.Frets[12].Label)
 	assert.Equal(t, 270.0, fretPlacements.Frets[12].Position)
+}
+
+func Test_shouldReturnPtolemysIntenseDiatonicScaleInTheIonianModeWhenOnlyScaleLengthIsProvided(t *testing.T) {
+	// Given
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Ionian", "octaves": "2"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Ionian mode.", fretPlacements.Description)
+	assert.Equal(t, 14, len(fretPlacements.Frets))
+
+	assert.Equal(t, "9:8", fretPlacements.Frets[0].Label)
+	assert.Equal(t, 60.0, fretPlacements.Frets[0].Position)
+	assert.Equal(t, "5:4", fretPlacements.Frets[1].Label)
+	assert.Equal(t, 108.0, fretPlacements.Frets[1].Position)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, 135.0, fretPlacements.Frets[2].Position)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, 180.0, fretPlacements.Frets[3].Position)
+	assert.Equal(t, "5:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, 216.0, fretPlacements.Frets[4].Position)
+	assert.Equal(t, "15:8", fretPlacements.Frets[5].Label)
+	assert.Equal(t, 252.0, fretPlacements.Frets[5].Position)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+	assert.Equal(t, 270.0, fretPlacements.Frets[6].Position)
+}
+
+func Test_shouldReturnDiatonicDorianJustIntonationPlacements(t *testing.T) {
+	// Given
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Dorian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Dorian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "9:8", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "6:5", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "5:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "16:9", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+}
+
+func Test_shouldReturnDiatonicPhrygianJustIntonationPlacements(t *testing.T) {
+	// Given Phrygian
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Phrygian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Phrygian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "16:15", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "6:5", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "8:5", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "16:9", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+}
+
+func Test_shouldReturnDiatonicLydianJustIntonationPlacements(t *testing.T) {
+	// Given Phrygian
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Lydian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Lydian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "9:8", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "5:4", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "45:32", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "5:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "15:8", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+}
+
+func Test_shouldReturnDiatonicMixolydianJustIntonationPlacements(t *testing.T) {
+	// Given Phrygian
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Mixolydian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Mixolydian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "9:8", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "5:4", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "5:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "16:9", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+}
+
+func Test_shouldReturnDiatonicAeolianJustIntonationPlacements(t *testing.T) {
+	// Given Phrygian
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Aeolian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Aeolian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "9:8", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "6:5", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "8:5", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "9:5", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
+}
+
+func Test_shouldReturnDiatonicLocrianJustIntonationPlacements(t *testing.T) {
+	// Given Phrygian
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just", "diatonicMode": "Locrian"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Locrian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
+
+	assert.Equal(t, "16:15", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "6:5", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "64:45", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "8:5", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "16:9", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[6].Label)
 }
 
 func Test_shouldReturnErrorWhenScaleLengthIsNotProvided(t *testing.T) {
@@ -107,11 +310,11 @@ func Test_shouldReturnErrorWhenScaleLengthIsNotANumber(t *testing.T) {
 	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"a numeric scaleLength greater than zero is required"}`}, response)
 }
 
-func Test_ShouldReturnErrorWhenTemperParameterIsInvalid(t *testing.T) {
+func Test_ShouldReturnErrorWhenTuningSystemIsInvalid(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "invalid"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "invalid"},
 	})
 
 	// Then
@@ -123,7 +326,7 @@ func Test_shouldReturnQuarterCommaMeantonePlacementsWithProvidedScaleLength(t *t
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "meantone"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "meantone"},
 	})
 
 	// Then
@@ -171,7 +374,7 @@ func Test_shouldReturnQuarterCommaMeantonePlacementsWithProvidedScaleLengthWhenE
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "meantone", "extended": "yes please"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "meantone", "extended": "yes please"},
 	})
 
 	// Then
@@ -188,7 +391,7 @@ func Test_shouldReturnExtendedQuarterCommaMeantonePlacementsWithProvidedScaleLen
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "meantone", "extended": "true"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "meantone", "extended": "true"},
 	})
 
 	// Then
@@ -235,7 +438,7 @@ func Test_shouldReturnPythagoreanPlacementsWithProvidedScaleLength(t *testing.T)
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "pythagorean"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "pythagorean"},
 	})
 
 	// Then
@@ -273,7 +476,7 @@ func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "equal"}})
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "equal"}})
 
 	// Then
 	assert.Nil(t, err)
@@ -292,7 +495,7 @@ func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "equal", "divisions": "19"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "equal", "divisions": "19"},
 	})
 
 	// Then
@@ -314,7 +517,7 @@ func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "temper": "saz"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "saz"},
 	})
 
 	// Then
