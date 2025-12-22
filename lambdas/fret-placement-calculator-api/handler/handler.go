@@ -24,6 +24,7 @@ type Fret struct {
 	Label    string  `json:"label"`
 	Position float64 `json:"position"`
 	Comment  string  `json:"comment,omitempty"`
+	Interval string  `json:"interval,omitempty"`
 }
 
 type FretPlacements struct {
@@ -408,15 +409,31 @@ func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64
 
 func (h Handler) ratiosToFretPlacements(scaleLength float64, ratios [][]uint) []Fret {
 	var frets []Fret
+	var previousRatio = []uint{1, 1}
 	for _, ratio := range ratios {
 		distanceFromNut := math.Round((scaleLength-(scaleLength/float64(ratio[0]))*float64(ratio[1]))*100) / 100
+		interval := intervalBetween(ratio, previousRatio)
 		frets = append(frets, Fret{
 			Label:    fmt.Sprintf("%d:%d", ratio[0], ratio[1]),
 			Position: distanceFromNut,
 			Comment:  intervalNameFromRatio(ratio),
+			Interval: fmt.Sprintf("%d:%d", interval[0], interval[1]),
 		})
+		previousRatio = ratio
 	}
 	return frets
+}
+
+func intervalBetween(ratio []uint, ratio2 []uint) []uint {
+	t := ratio[0] * ratio2[1]
+	b := ratio[1] * ratio2[0]
+	i := cmp.Compare(float64(t)/float64(b), 1.0)
+	if i < 0 {
+		return fractionToLowestDenominator([]uint{b, t})
+	} else if i > 0 {
+		return fractionToLowestDenominator([]uint{t, b})
+	}
+	return ratio
 }
 
 func intervalNameFromRatio(ratio []uint) string {
