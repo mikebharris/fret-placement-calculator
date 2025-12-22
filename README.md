@@ -20,14 +20,36 @@ tension of the string, type of instrument, etc.
 
 ##### Parameters
 
-> | name              | type     | data type | default | description                                                                                                 |
-> |-------------------|----------|-----------|---------|-------------------------------------------------------------------------------------------------------------|
-> | `scaleLength`     | required | float64   |         | The scale length from nut to bridge (saddle)                                                                |
-> | `tuningSystem`    | optional | string    | just    | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
-> | `diatonicMode`    | optional | string    | Ionian  | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
-> | `extendMeantone`  | optional | bool      | false   | Extend the meantone scale                                                                                   |
-> | `octaveDivisions` | optional | int       | 31      | Number of divisions of the octave for equal temperament                                                     |
-> | `octaves`         | optional | int       | 1       | Number of octaves of frets to compute                                                                       |
+> | name                    | type     | data type | default    | description                                                                                                 |
+> |-------------------------|----------|-----------|------------|-------------------------------------------------------------------------------------------------------------|
+> | `scaleLength`           | required | float64   |            | The scale length from nut to bridge (saddle)                                                                |
+> | `tuningSystem`          | optional | string    | just       | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
+> | `diatonicMode`          | optional | string    | Ionian     | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
+> | `justSymmetry`          | optional | string    | asymmetric | Type of major seconds and minor sevenths to use in just scale                                               |
+> | `extendMeantone`        | optional | bool      | false      | Extend the meantone scale                                                                                   |
+> | `octaveDivisions`       | optional | int       | 31         | Number of divisions of the octave for equal temperament                                                     |
+> | `octaves`               | optional | int       | 1          | Number of octaves of frets to compute                                                                       |
+
+##### Values for `tuningSystem`
+
+> | value                       | description                                                                         |
+> |-----------------------------|-------------------------------------------------------------------------------------|
+> | `just5limitFromRatios`      | 5-limit Just Intonation derived from pure ratios                                    |
+> | `just5limitFromPythagorean` | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
+> | `meantone`                  | Quarter-Comma Meantone                                                              |
+> | `pythagorean`               | Pythagorean 3-limit just tuning                                                     |
+> | `equal`                     | Equal Temperament                                                                   |
+> | `ptolemy`                   | Ptolemy's Intense Diatonic tuning                                                   |
+> | `saz`                       | Turkish Saz tuning                                                                  |
+
+##### Values for `justSymmetry`
+
+> | value        | description                                                               |
+> |--------------|---------------------------------------------------------------------------|
+> | `asymmetric` | Use asymmetric scale with greater major seconds and lesser minor sevenths |
+> | `symmetric1` | Use symmetric scale with lesser major seconds and greater minor sevenths  |
+> | `symmetric2` | Use symmetric scale with greater major seconds and lesser minor sevenths  |
+
 
 ##### Responses
 

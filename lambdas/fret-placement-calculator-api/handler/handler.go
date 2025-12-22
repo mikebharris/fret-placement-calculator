@@ -110,7 +110,7 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, extended)
 	case "":
 		fallthrough
-	case "just":
+	case "ptolemy":
 		var octaves = 1
 		if request.QueryStringParameters["octaves"] != "" {
 			octaves, err = strconv.Atoi(request.QueryStringParameters["octaves"])
@@ -118,18 +118,24 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid positive number for number of octaves worth of frets"}`}, nil
 			}
 		}
+		mode := "Ionian"
 		if request.QueryStringParameters["diatonicMode"] != "" {
-			mode := "Ionian"
 			mode = request.QueryStringParameters["diatonicMode"]
 			if mode != "Lydian" && mode != "Ionian" && mode != "Mixolydian" && mode != "Dorian" && mode != "Aeolian" && mode != "Phrygian" && mode != "Locrian" {
 				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid mode for the diatonic scale"}`}, nil
 			}
-			fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, octaves, mode)
-		} else {
-			fretPlacements = h.fretPlacementsFor5LimitJustChromaticTuning(scaleLength, octaves)
 		}
+		fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, octaves, mode)
+	case "just5limitFromPythagorean":
+		fretPlacements = h.fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength)
+	case "just5limitFromRatios":
+		justSymmetry := "asymmetric"
+		if request.QueryStringParameters["justSymmetry"] != "" {
+			justSymmetry = request.QueryStringParameters["justSymmetry"]
+		}
+		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
 	default:
-		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"invalid temper parameter"}`}, nil
+		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid tuning system"}`}, nil
 	}
 
 	fretPlacements.ScaleLength = scaleLength
@@ -191,7 +197,8 @@ func octaveReduceIntegerRatio(ratio []uint) []uint {
 	return ratio
 }
 
-func (h Handler) fretPlacementsFor5LimitJustChromaticTuning(scaleLength float64, octaves int) FretPlacements {
+func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) FretPlacements {
+	// Derive scale by adjusting Pythagorean scale by syntonic comma (81/80)
 	// 	m2 : 256/243 → 16/15
 	//	M2 : 9/8 → 10/9
 	//	m3 : 32/27 → 6/5
@@ -227,6 +234,69 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuning(scaleLength float64,
 		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios."),
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
+}
+
+func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
+	forthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
+	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
+
+	var ratios [][]uint
+	for _, tpm := range thirdPartialMultipliers {
+		for _, fpm := range forthPartialMultipliers {
+			numerator := tpm[0] * fpm[0]
+			denominator := tpm[1] * fpm[1]
+			ratio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{numerator, denominator}))
+			if isFundamental(ratio) || isDiminishedFifth(ratio) {
+				continue
+			}
+			if symmetry == "asymmetric" && (isLesserMajorSecond(ratio) || isLesserMinorSeventh(ratio)) {
+				continue
+			}
+			if symmetry == "symmetric1" && (isLesserMajorSecond(ratio) || isGreaterMinorSeventh(ratio)) {
+				continue
+			}
+			if symmetry == "symmetric2" && (isGreaterMajorSecond(ratio) || isLesserMinorSeventh(ratio)) {
+				continue
+			}
+			ratios = append(ratios, ratio)
+		}
+	}
+
+	ratios = append(ratios, []uint{2, 1})
+
+	slices.SortFunc(ratios, func(x, y []uint) int {
+		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
+	})
+
+	return FretPlacements{
+		System:      "5-limit Just Intonation",
+		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and forth-partial ratios."),
+		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+	}
+}
+
+func isFundamental(ratio []uint) bool {
+	return ratio[0] == 1 && ratio[1] == 1
+}
+
+func isLesserMajorSecond(ratio []uint) bool {
+	return ratio[0] == 10 && ratio[1] == 9
+}
+
+func isGreaterMajorSecond(ratio []uint) bool {
+	return ratio[0] == 9 && ratio[1] == 8
+}
+
+func isDiminishedFifth(ratio []uint) bool {
+	return ratio[0] == 64 && ratio[1] == 45
+}
+
+func isLesserMinorSeventh(ratio []uint) bool {
+	return ratio[0] == 16 && ratio[1] == 9
+}
+
+func isGreaterMinorSeventh(ratio []uint) bool {
+	return ratio[0] == 9 && ratio[1] == 5
 }
 
 func (h Handler) fretPlacementsFor7LimitJustChromaticTuning(scaleLength float64, octaves int) FretPlacements {
