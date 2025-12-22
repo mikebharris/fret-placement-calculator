@@ -299,66 +299,6 @@ func isGreaterMinorSeventh(ratio []uint) bool {
 	return ratio[0] == 9 && ratio[1] == 5
 }
 
-func (h Handler) fretPlacementsFor7LimitJustChromaticTuning(scaleLength float64, octaves int) FretPlacements {
-	// 	m2 : 256/243 → 16/15
-	//	M2 : 9/8 → 10/9
-	//	m3 : 32/27 → 6/5
-	//	M3 : 81/64 → 5/4
-	//	m6 : 128/81 → 8/5
-	//	M6 : 27/16 → 5/3
-	//	m7 : 16/9 → 9/5
-	//	M7 : 243/128 → 15/8
-
-	var acuteUnison = []uint{81, 80}
-	var graveUnison = []uint{80, 81}
-
-	var septimalKleisma = []uint{225, 224}
-
-	var ratios [][]uint
-
-	for _, ratio := range computePythagoreanRatios() {
-		if ratioIsPerfect(ratio) {
-			ratios = append(ratios, ratio)
-			continue
-		}
-
-		graveRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * acuteUnison[0], ratio[1] * acuteUnison[1]}))
-		acuteRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * graveUnison[0], ratio[1] * graveUnison[1]}))
-
-		if graveRatio[1] < acuteRatio[1] {
-			ratios = append(ratios, graveRatio)
-		} else {
-			ratios = append(ratios, acuteRatio)
-		}
-	}
-
-	for i, ratio := range ratios {
-		graveKleismaRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * septimalKleisma[0], ratio[1] * septimalKleisma[1]}))
-		acuteKleismaRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * septimalKleisma[1], ratio[1] * septimalKleisma[0]}))
-		fmt.Println(acuteKleismaRatio)
-		fmt.Println(graveKleismaRatio)
-		if graveKleismaRatio[1] < acuteKleismaRatio[1] {
-			if graveKleismaRatio[0] < ratios[i][0] {
-				ratios[i][0] = graveKleismaRatio[0]
-				ratios[i][1] = graveKleismaRatio[1]
-			}
-		} else {
-			if acuteKleismaRatio[0] < ratios[i][0] {
-				ratios[i][0] = acuteKleismaRatio[0]
-				ratios[i][1] = acuteKleismaRatio[1]
-			}
-		}
-	}
-
-	fmt.Println(ratios)
-
-	return FretPlacements{
-		System:      "7-limit Just Intonation",
-		Description: fmt.Sprintf("Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from applying syntonic comma and septimal kleisma to Pythagorean ratios."),
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
-	}
-}
-
 func ratioIsPerfect(ratio []uint) bool {
 	return (ratio[0] == 1 && ratio[1] == 1) || (ratio[0] == 4 && ratio[1] == 3) || (ratio[0] == 3 && ratio[1] == 2) || (ratio[0] == 2 && ratio[1] == 1)
 }
