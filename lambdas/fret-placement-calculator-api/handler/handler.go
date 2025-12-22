@@ -62,7 +62,7 @@ var JustRatios = []Ratio{
 	{45, 32, "Augmented Fourth"},
 	{7, 5, "Septimal Augmented Fourth"},
 	{1024, 729, "Pythagorean Diminished Fifth"},
-	{729, 512, "Pythagorean Augmented Fifth"},
+	{729, 512, "Pythagorean Augmented Forth"},
 	{64, 45, "Diminished Fifth"},
 	{10, 7, "Septimal Diminished Fifth"},
 	{40, 27, "Grave Fifth"},
