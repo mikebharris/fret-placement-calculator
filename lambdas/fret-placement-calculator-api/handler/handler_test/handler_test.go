@@ -16,6 +16,8 @@ var headers = map[string]string{"Content-Type": "application/json"}
 
 func Test_shouldReturnFretPlacementsForAChromaticFiveLimitJustIntonationScale(t *testing.T) {
 	// Given
+	// Mike read the page at https://www.microtonaltheory.com/tuning-theory/five-limit-just-intonation
+
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
 		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just5limitFromPythagorean"},
