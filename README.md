@@ -3,7 +3,8 @@
 Outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
 various tunings, including:
 
-* Just Intonation
+* Just Intonation by various means
+* Ptolemy's Intense Diatonic scale in various modes
 * Quarter-Comma Meantone
 * Extended Quarter-Comma Meantone
 * Any Equal Temperament (12, 19, 23, 31, 53, 55, etc)
