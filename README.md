@@ -60,49 +60,59 @@ tension of the string, type of instrument, etc.
 
 ##### Example cURL
 
-Compute Ptolemy's Intense Diatonic tuning for a scale length of 546mm:
+Compute Ptolemy's Intense Diatonic tuning for a scale length of 570mm:
 
 > ```shell
->  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=546
+>  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=570
 > ```
 
 ````json
 {
-  "system": "5-limit Just Intonation",
-  "description": "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
-  "scaleLength": 546,
+  "system": "Ptolemy",
+  "description": "Fret positions for Ptolemy's 5-limit intense diatonic scale in Ionian mode.",
+  "scaleLength": 570,
   "frets": [
     {
       "label": "9:8",
-      "position": 60.67
+      "position": 63.33,
+      "comment": "Pythagorean (Greater) Major Second",
+      "interval": "9:8"
     },
     {
       "label": "5:4",
-      "position": 109.2
+      "position": 114,
+      "comment": "Major Third",
+      "interval": "10:9"
     },
     {
       "label": "4:3",
-      "position": 136.5
+      "position": 142.5,
+      "comment": "Perfect Fourth",
+      "interval": "16:15"
     },
     {
       "label": "3:2",
-      "position": 182
+      "position": 190,
+      "comment": "Perfect Fifth",
+      "interval": "9:8"
     },
     {
       "label": "5:3",
-      "position": 218.4
-    },
-    {
-      "label": "16:9",
-      "position": 238.88
+      "position": 228,
+      "comment": "Major Sixth",
+      "interval": "10:9"
     },
     {
       "label": "15:8",
-      "position": 254.8
+      "position": 266,
+      "comment": "Just Major Seventh",
+      "interval": "9:8"
     },
     {
       "label": "2:1",
-      "position": 273
+      "position": 285,
+      "comment": "Perfect Octave",
+      "interval": "16:15"
     }
   ]
 }
