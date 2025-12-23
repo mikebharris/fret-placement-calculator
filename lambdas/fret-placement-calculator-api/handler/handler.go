@@ -238,26 +238,49 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 	}
 }
 
-func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
-	fourthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
-	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
+// noteFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
+type noteFilterFunction func([]uint) bool
 
+func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
+	return FretPlacements{
+		System:      "5-limit Just Intonation",
+		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.",
+		Frets:       h.ratiosToFretPlacements(scaleLength, computeFiveLimitJustRatios(symmetry)),
+	}
+}
+
+func computeFiveLimitJustRatios(symmetry string) [][]uint {
+	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
+	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
+	return computeJustRatios(fifthPartialMultipliers, thirdPartialMultipliers, fiveLimitScaleFilter(symmetry))
+}
+
+func fiveLimitScaleFilter(symmetry string) func(r []uint) bool {
+	return func(r []uint) bool {
+		if symmetry == "asymmetric" && (isLesserMajorSecond(r) || isLesserMinorSeventh(r)) {
+			return true
+		}
+		if symmetry == "symmetric1" && (isLesserMajorSecond(r) || isGreaterMinorSeventh(r)) {
+			return true
+		}
+		if symmetry == "symmetric2" && (isGreaterMajorSecond(r) || isLesserMinorSeventh(r)) {
+			return true
+		}
+		return false
+	}
+}
+
+func computeJustRatios(multiplier1, multiplier2 [][]uint, filter noteFilterFunction) [][]uint {
 	var ratios [][]uint
-	for _, tpm := range thirdPartialMultipliers {
-		for _, fpm := range fourthPartialMultipliers {
+	for _, tpm := range multiplier1 {
+		for _, fpm := range multiplier2 {
 			numerator := tpm[0] * fpm[0]
 			denominator := tpm[1] * fpm[1]
 			ratio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{numerator, denominator}))
 			if isFundamental(ratio) || isDiminishedFifth(ratio) {
 				continue
 			}
-			if symmetry == "asymmetric" && (isLesserMajorSecond(ratio) || isLesserMinorSeventh(ratio)) {
-				continue
-			}
-			if symmetry == "symmetric1" && (isLesserMajorSecond(ratio) || isGreaterMinorSeventh(ratio)) {
-				continue
-			}
-			if symmetry == "symmetric2" && (isGreaterMajorSecond(ratio) || isLesserMinorSeventh(ratio)) {
+			if filter(ratio) {
 				continue
 			}
 			ratios = append(ratios, ratio)
@@ -269,12 +292,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scal
 	slices.SortFunc(ratios, func(x, y []uint) int {
 		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
 	})
-
-	return FretPlacements{
-		System:      "5-limit Just Intonation",
-		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
-	}
+	return ratios
 }
 
 func isFundamental(ratio []uint) bool {

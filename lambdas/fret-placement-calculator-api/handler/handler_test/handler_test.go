@@ -91,7 +91,7 @@ func Test_shouldReturnFretPlacementsForAsymmetricJustChromaticScaleBasedOnPureRa
 	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
 	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretPlacements.System)
-	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios.", fretPlacements.Description)
+	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.", fretPlacements.Description)
 	assert.Equal(t, 12, len(fretPlacements.Frets))
 
 	assert.Equal(t, "16:15", fretPlacements.Frets[0].Label)
@@ -126,7 +126,7 @@ func Test_shouldReturnFretPlacementsForSymmetricJustChromaticScaleWithLesserMajo
 	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
 	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretPlacements.System)
-	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios.", fretPlacements.Description)
+	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.", fretPlacements.Description)
 	assert.Equal(t, 12, len(fretPlacements.Frets))
 
 	assert.Equal(t, "9:8", fretPlacements.Frets[1].Label)
@@ -151,7 +151,7 @@ func Test_shouldReturnFretPlacementsForSymmetricJustChromaticScaleWithGreaterMaj
 	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
 	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretPlacements.System)
-	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios.", fretPlacements.Description)
+	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.", fretPlacements.Description)
 	assert.Equal(t, 12, len(fretPlacements.Frets))
 
 	assert.Equal(t, "10:9", fretPlacements.Frets[1].Label)
