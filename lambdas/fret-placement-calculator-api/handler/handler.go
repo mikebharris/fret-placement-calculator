@@ -62,7 +62,7 @@ var JustRatios = []Ratio{
 	{45, 32, "Augmented Fourth"},
 	{7, 5, "Septimal Augmented Fourth"},
 	{1024, 729, "Pythagorean Diminished Fifth"},
-	{729, 512, "Pythagorean Augmented Forth"},
+	{729, 512, "Pythagorean Augmented Fourth"},
 	{64, 45, "Diminished Fifth"},
 	{10, 7, "Septimal Diminished Fifth"},
 	{40, 27, "Grave Fifth"},
@@ -239,12 +239,12 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 }
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
-	forthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
+	fourthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 
 	var ratios [][]uint
 	for _, tpm := range thirdPartialMultipliers {
-		for _, fpm := range forthPartialMultipliers {
+		for _, fpm := range fourthPartialMultipliers {
 			numerator := tpm[0] * fpm[0]
 			denominator := tpm[1] * fpm[1]
 			ratio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{numerator, denominator}))
@@ -272,7 +272,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scal
 
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
-		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and forth-partial ratios."),
+		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios."),
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
 }
@@ -532,7 +532,7 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 
 	slices.Sort(ratios) // Sort the ratios in ascending order
 
-	intervalNames := []string{"Unison", "Minor Second", "Major Second", "Minor Third", "Major Third", "Forth", "Augmented Forth", "Fifth", "Augmented Fifth", "Major Sixth", "Minor Seventh", "Major Seventh"}
+	intervalNames := []string{"Unison", "Minor Second", "Major Second", "Minor Third", "Major Third", "Fourth", "Augmented Fourth", "Fifth", "Augmented Fifth", "Major Sixth", "Minor Seventh", "Major Seventh"}
 	prevRatio := 1.0
 	var frets []Fret
 	for fretNumber, ratio := range ratios {

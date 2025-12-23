@@ -89,9 +89,9 @@ func meantone(scaleLength float64, fifthTemperedByFractionOfSyntonicComma float6
 	// and the lesser dieses = 2^7 / 5^3 = 128/125 = 1.024
 	// diatonic semitone = dieses x chromatic semitone
 	// therefore in the scale: D Eb E F F# G G# Ab A Bb B C C# (13 notes)
-	// we get rid of the dieses by ditching the diminished fifth (Ab) and keeping the augmented forth (G#)
+	// we get rid of the dieses by ditching the diminished fifth (Ab) and keeping the augmented fourth (G#)
 	// this leaves D (d) Eb (c) E (d) F (c) F# (d) G (c) G# (d) A (d) Bb (c) B (d) C (c) C# (d) D
-	// with two diatonic semitones either side of the tonic (D) and forth (G) or one back in the circle of ratiosOfNotesToFundamental
+	// with two diatonic semitones either side of the tonic (D) and fourth (G) or one back in the circle of ratiosOfNotesToFundamental
 	//
 	// there are two tritones: D -> G# and D -> Ab
 
