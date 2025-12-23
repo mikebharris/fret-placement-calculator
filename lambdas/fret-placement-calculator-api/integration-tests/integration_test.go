@@ -71,7 +71,7 @@ func (s *steps) stopContainerNetwork() {
 }
 
 func (s *steps) iRequestWhereToPutTheFretsForAScaleLengthOf(scaleLength string) {
-	s.invokeLambdaUsingRequest(events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": scaleLength}})
+	s.invokeLambdaUsingRequest(events.LambdaFunctionURLRequest{QueryStringParameters: map[string]string{"scaleLength": scaleLength, "tuningSystem": "just5limitFromPythagorean"}})
 }
 
 func (s *steps) invokeLambdaUsingRequest(request events.LambdaFunctionURLRequest) {
