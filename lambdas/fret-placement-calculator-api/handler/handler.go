@@ -134,6 +134,8 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 			justSymmetry = request.QueryStringParameters["justSymmetry"]
 		}
 		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
+	case "bachWellTemperament":
+		fretPlacements = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
 	default:
 		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid tuning system"}`}, nil
 	}
@@ -486,4 +488,78 @@ func octaveReduceFloat(ratio float64) float64 {
 		}
 	}
 	return ratio
+}
+
+// Bach's Well Temperament as per
+// Bach's Extraordinary Temperament: Our Rosetta Stone - Bradley Lehman
+// Early Music Volume 33, Number 1, February 2005, pp. 3-23 (Article)
+// Reference: https://academic.oup.com/em/article-abstract/33/1/3/535436?redirectedFrom=fulltext
+func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) FretPlacements {
+	// Narrowing of the fifths as outlined by Lehman
+	syntonicComma := 81.0 / 80.0
+	temperingFractions := []float64{
+		0.0,         // Pure fifth
+		-1.0 / 12.0, // Twelfth-comma narrowed
+		-1.0 / 6.0,  // Sixth-comma narrowed
+		0.0,         // Pure fifth
+		-1.0 / 6.0,  // Sixth-comma narrowed
+		-1.0 / 12.0, // Twelfth-comma narrowed
+		0.0,         // Pure fifth
+		-1.0 / 6.0,  // Sixth-comma narrowed
+		-1.0 / 12.0, // Twelfth-comma narrowed
+		0.0,         // Pure fifth
+		-1.0 / 6.0,  // Sixth-comma narrowed
+		-1.0 / 12.0, // Twelfth-comma narrowed
+	}
+
+	// Calculate tempered fifths
+	temperedFifths := make([]float64, 12)
+	for i := 0; i < 12; i++ {
+		temperedFifths[i] = 3.0 / 2.0 * math.Pow(syntonicComma, temperingFractions[i])
+	}
+
+	// Derive ratios by walking the circle of fifths
+	ratios := make([]float64, 12)
+	ratios[0] = 1.0 // Start with the tonic
+	for i := 1; i < 12; i++ {
+		ratios[i] = ratios[i-1] * temperedFifths[(i-1)%12]
+	}
+
+	// Reduce ratios to within the octave [1.0, 2.0)
+	for i := range ratios {
+		ratios[i] = octaveReduceFloat(ratios[i])
+	}
+
+	slices.Sort(ratios) // Sort the ratios in ascending order
+
+	intervalNames := []string{"Unison", "Minor Second", "Major Second", "Minor Third", "Major Third", "Forth", "Augmented Forth", "Fifth", "Augmented Fifth", "Major Sixth", "Minor Seventh", "Major Seventh"}
+	prevRatio := 1.0
+	var frets []Fret
+	for fretNumber, ratio := range ratios {
+		if fretNumber == 0 {
+			continue // Skip the tonic (unfretted)
+		}
+		distanceFromNut := scaleLength - (scaleLength / ratio)
+		frets = append(frets, Fret{
+			Label:    fmt.Sprintf("%d (%s)", fretNumber, intervalNames[fretNumber%len(intervalNames)]),
+			Position: math.Round(distanceFromNut*1000) / 1000, // Round to 3 decimal places
+			Comment:  fmt.Sprintf("ratio: %.6f; interval: %.6f", ratio, ratio/prevRatio),
+		})
+		prevRatio = ratio
+	}
+
+	// Add the octave fret (2nd partial)
+	frets = append(frets, Fret{
+		Label:    fmt.Sprintf("%d (Octave)", len(frets)+1),
+		Position: scaleLength / 2,
+		Comment:  fmt.Sprintf("ratio: %.1f; interval: %.6f", 2.0, 2.0/prevRatio),
+	})
+
+	description := "Fret positions derived from Lehman's decoding of Bach's Well-Tempered tuning, using sixth-comma, twelfth-comma, and pure fifths."
+	return FretPlacements{
+		System:      "Bach's Well-Tempered Tuning",
+		Description: description,
+		ScaleLength: scaleLength,
+		Frets:       frets,
+	}
 }

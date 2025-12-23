@@ -645,3 +645,23 @@ func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
 	assert.Equal(t, "Fret positions for traditional Turkish Saz tuning ratios.", fretPlacements.Description)
 	assert.Equal(t, 17, len(fretPlacements.Frets))
 }
+
+func Test_ShouldReturnFretPlacementsForBachWohltemperierteKlavierTuning(t *testing.T) {
+	// Given
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "bachWellTemperament"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, response.Headers, headers)
+
+	fretPlacements := handler.FretPlacements{}
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, float64(540), fretPlacements.ScaleLength)
+	assert.Equal(t, "Bach's Well-Tempered Tuning", fretPlacements.System)
+	assert.Equal(t, "Fret positions derived from Lehman's decoding of Bach's Well-Tempered tuning, using sixth-comma, twelfth-comma, and pure fifths.", fretPlacements.Description)
+	assert.Equal(t, 12, len(fretPlacements.Frets))
+}

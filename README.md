@@ -38,6 +38,7 @@ tension of the string, type of instrument, etc.
 > | `just5limitFromRatios`      | 5-limit Just Intonation derived from pure ratios                                    |
 > | `just5limitFromPythagorean` | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
 > | `meantone`                  | Quarter-Comma Meantone                                                              |
+> | `bachWellTemperament`       | Bach's Well Temperament (as decoded by Bradley Lehman)                              |
 > | `pythagorean`               | Pythagorean 3-limit just tuning                                                     |
 > | `equal`                     | Equal Temperament                                                                   |
 > | `ptolemy`                   | Ptolemy's Intense Diatonic tuning                                                   |
@@ -50,7 +51,6 @@ tension of the string, type of instrument, etc.
 > | `asymmetric` | Use asymmetric scale with greater major seconds and lesser minor sevenths |
 > | `symmetric1` | Use symmetric scale with lesser major seconds and greater minor sevenths  |
 > | `symmetric2` | Use symmetric scale with greater major seconds and lesser minor sevenths  |
-
 
 ##### Responses
 
