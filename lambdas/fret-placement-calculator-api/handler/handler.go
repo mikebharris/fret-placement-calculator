@@ -233,7 +233,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
-		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios."),
+		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
 }
@@ -272,7 +272,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scal
 
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
-		Description: fmt.Sprintf("Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios."),
+		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fourth-partial ratios.",
 		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
 	}
 }
@@ -388,11 +388,11 @@ func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64
 		if fretNumber == 0 {
 			continue
 		}
-		distanceFromNut, _ := strconv.ParseFloat(fmt.Sprintf("%.1f", scaleLength-(scaleLength/ratio)), 64)
+
 		interval := ratio / prevRatio
 		frets = append(frets, Fret{
 			Label:    fmt.Sprintf("%d (%s)", fretNumber, noteNames[fretNumber]),
-			Position: distanceFromNut,
+			Position: math.Round((scaleLength-(scaleLength/ratio))*10) / 10,
 			Comment:  fmt.Sprintf("ratio: %.3f; interval: %.6f", ratio, interval),
 		})
 		prevRatio = ratio
