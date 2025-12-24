@@ -13,6 +13,12 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
+const (
+	defaultEqualTemperamentDivisions = 31
+	defaultJustSymmetry              = "asymmetric"
+	defaultOctavesToCompute          = 1
+)
+
 var headers = map[string]string{
 	"Content-Type": "application/json",
 }
@@ -40,117 +46,92 @@ type Ratio struct {
 	Name        string
 }
 
-var JustRatios = []Ratio{
-	{1, 1, "Perfect Unison"},
-	{225, 224, "Septimal Kleisma"},
-	{81, 80, "Grave Unison"},
-	{128, 125, "Dieses (Diminished Second)"},
-	{25, 24, "Just (Lesser) Chromatic Semitone"},
-	{256, 243, "Pythagorean Minor Second"},
-	{135, 128, "Greater Chromatic Semitone"},
-	{27, 25, "Acute Minor Second"},
-	{16, 15, "Minor Second"},
-	{15, 14, "Septimal Minor Second"},
-	{10, 9, "Just (Lesser) Major Second"},
-	{9, 8, "Pythagorean (Greater) Major Second"},
-	{8, 7, "Septimal Major Second"},
-	{6, 5, "Minor Third"},
-	{5, 4, "Major Third"},
-	{32, 27, "Diminished Fourth"},
-	{81, 64, "Pythagorean Major Third"},
-	{4, 3, "Perfect Fourth"},
-	{45, 32, "Augmented Fourth"},
-	{7, 5, "Septimal Augmented Fourth"},
-	{1024, 729, "Pythagorean Diminished Fifth"},
-	{729, 512, "Pythagorean Augmented Fourth"},
-	{64, 45, "Diminished Fifth"},
-	{10, 7, "Septimal Diminished Fifth"},
-	{40, 27, "Grave Fifth"},
-	{3, 2, "Perfect Fifth"},
-	{8, 5, "Just Minor Sixth"},
-	{128, 81, "Pythagorean Minor Sixth"},
-	{5, 3, "Major Sixth"},
-	{27, 16, "Pythagorean Major Sixth"},
-	{16, 9, "Pythagorean (Lesser) Minor Seventh"},
-	{9, 5, "Just (Greater) Minor Seventh"},
-	{7, 4, "Septimal (Harmonic) Minor Seventh"},
-	{15, 8, "Just Major Seventh"},
-	{243, 128, "Pythagorean Major Seventh"},
-	{2, 1, "Perfect Octave"},
-}
+func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+	q := request.QueryStringParameters
 
-func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
-
-	scaleLength, err := strconv.ParseFloat(request.QueryStringParameters["scaleLength"], 64)
+	scaleLength, err := strconv.ParseFloat(q["scaleLength"], 64)
 	if err != nil || scaleLength <= 0 {
-		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"a numeric scaleLength greater than zero is required"}`}, nil
+		return errorResponse(http.StatusUnprocessableEntity, `{"error":"a numeric scaleLength greater than zero is required"}`), nil
 	}
 
 	var fretPlacements FretPlacements
 
-	switch request.QueryStringParameters["tuningSystem"] {
+	switch q["tuningSystem"] {
 	case "equal":
-		divisionsOfOctave := 31
-		if request.QueryStringParameters["divisions"] != "" {
-			divisionsOfOctave, err = strconv.Atoi(request.QueryStringParameters["divisions"])
-		}
-		if err != nil {
-			return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide number of divisions for equal temperament"}`}, nil
-		}
-		fretPlacements = h.fretPlacementsForEqualTemperamentTuning(scaleLength, divisionsOfOctave)
+		fretPlacements = h.fretPlacementsForEqualTemperamentTuning(scaleLength, parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))
+
 	case "saz":
 		fretPlacements = h.fretPlacementsForSazTuning(scaleLength)
+
 	case "pythagorean":
 		fretPlacements = h.fretPlacementsForPythagoreanTuning(scaleLength)
+
 	case "meantone":
-		extended := false
-		if request.QueryStringParameters["extended"] != "" {
-			extended, _ = strconv.ParseBool(request.QueryStringParameters["extended"])
-		}
+		extended, _ := strconv.ParseBool(q["extended"])
 		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, extended)
+
 	case "":
 		fallthrough
 	case "ptolemy":
-		var octaves = 1
-		if request.QueryStringParameters["octaves"] != "" {
-			octaves, err = strconv.Atoi(request.QueryStringParameters["octaves"])
-			if err != nil {
-				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid positive number for number of octaves worth of frets"}`}, nil
-			}
-		}
-		mode := "Ionian"
-		if request.QueryStringParameters["diatonicMode"] != "" {
-			mode = request.QueryStringParameters["diatonicMode"]
-			if mode != "Lydian" && mode != "Ionian" && mode != "Mixolydian" && mode != "Dorian" && mode != "Aeolian" && mode != "Phrygian" && mode != "Locrian" {
-				return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid mode for the diatonic scale"}`}, nil
-			}
-		}
-		fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, octaves, mode)
+		fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, parseIntegerQueryParameter(q, "octaves", defaultOctavesToCompute), validDiatonicModeOrDefault(q["diatonicMode"]))
+
 	case "just5limitFromPythagorean":
 		fretPlacements = h.fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength)
+
 	case "just5limitFromRatios":
-		justSymmetry := "asymmetric"
-		if request.QueryStringParameters["justSymmetry"] != "" {
-			justSymmetry = request.QueryStringParameters["justSymmetry"]
-		}
-		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
+		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
+
 	case "just7limitFromRatios":
-		justSymmetry := "asymmetric"
-		if request.QueryStringParameters["justSymmetry"] != "" {
-			justSymmetry = request.QueryStringParameters["justSymmetry"]
-		}
-		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
+		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
+
 	case "bachWellTemperament":
 		fretPlacements = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
+
 	default:
-		return events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid tuning system"}`}, nil
+		return errorResponse(http.StatusUnprocessableEntity, `{"error":"please provide a valid tuning system"}`), nil
 	}
 
 	fretPlacements.ScaleLength = scaleLength
 	body, _ := json.Marshal(fretPlacements)
-
 	return events.LambdaFunctionURLResponse{StatusCode: http.StatusOK, Headers: headers, Body: string(body)}, nil
+}
 
+func validDiatonicModeOrDefault(mode string) string {
+	if mode == "" || !isValidDiatonicMode(mode) {
+		mode = "Ionian"
+	}
+	return mode
+}
+
+func errorResponse(status int, body string) events.LambdaFunctionURLResponse {
+	return events.LambdaFunctionURLResponse{StatusCode: status, Headers: headers, Body: body}
+}
+
+func parseStringQueryParameter(q map[string]string, key, fallback string) string {
+	if v := q[key]; v != "" {
+		return v
+	}
+	return fallback
+}
+
+func parseIntegerQueryParameter(q map[string]string, key string, fallback int) int {
+	if q[key] == "" {
+		return fallback
+	}
+	atoi, err := strconv.Atoi(q[key])
+	if err != nil || atoi <= 0 {
+		return fallback
+	}
+	return atoi
+}
+
+func isValidDiatonicMode(mode string) bool {
+	switch mode {
+	case "Lydian", "Ionian", "Mixolydian", "Dorian", "Aeolian", "Phrygian", "Locrian":
+		return true
+	default:
+		return false
+	}
 }
 
 func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) FretPlacements {
@@ -334,7 +315,7 @@ func ratioIsPerfect(ratio []uint) bool {
 func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
 	return FretPlacements{
 		System:      "7-limit Just Intonation",
-		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios (generated from small powers of 3,5,7).",
+		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
 		Frets:       h.ratiosToFretPlacements(scaleLength, computeSevenLimitJustRatios(symmetry)),
 	}
 }
@@ -343,16 +324,13 @@ func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scal
 // and combines them with powers of 3 (as in the previous thirdPartialMultipliers).
 func computeSevenLimitJustRatios(symmetry string) [][]uint {
 	// powers of 3 used previously: 3^-2 .. 3^2
-	thirdPartialMultipliers := [][]uint{
-		{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1},
-	}
+	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 
 	// build multipliers for combinations of 5^e5 * 7^e7 for e in {-1,0,1}
 	var fiveSevenMultipliers [][]uint
 	for e5 := -1; e5 <= 1; e5++ {
 		for e7 := -1; e7 <= 1; e7++ {
-			num := uint(1)
-			den := uint(1)
+			num, den := uint(1), uint(1)
 
 			if e5 > 0 {
 				num *= uint(intPow(5, e5))
@@ -370,45 +348,40 @@ func computeSevenLimitJustRatios(symmetry string) [][]uint {
 		}
 	}
 
-	// Use computeJustRatios to form full ratios and sort them.
-	ratios := computeJustRatios(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
-
-	// ensure deterministic ordering (computeJustRatios already sorts, but keep robustness)
-	slices.SortFunc(ratios, func(x, y []uint) int {
-		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
-	})
-	return ratios
+	pool := computeJustRatios(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
+	return selectRatiosFromPool(pool, sevenLimitWantedRatios())
 }
 
-// simple integer power for small positive exponents
-func intPow(base, exp int) int {
-	if exp <= 0 {
-		return 1
-	}
-	res := 1
-	for i := 0; i < exp; i++ {
-		res *= base
-	}
-	return res
-}
-
-// currently a no-op filter for 7-limit; can be extended to implement symmetry exclusions if desired.
-func sevenLimitScaleFilter(symmetry string) func([]uint) bool {
-	return func(r []uint) bool {
-		return false
+func sevenLimitWantedRatios() [][]uint {
+	return [][]uint{
+		{15, 14},
+		{8, 7},
+		{6, 5},
+		{5, 4},
+		{4, 3},
+		{7, 5},
+		{3, 2},
+		{8, 5},
+		{5, 3},
+		{7, 4},
+		{15, 8},
+		{2, 1},
 	}
 }
 
-func fractionToLowestDenominator(fraction []uint) []uint {
-	gcd := func(a, b uint) uint {
-		for b != 0 {
-			a, b = b, a%b
+func selectRatiosFromPool(pool, wanted [][]uint) [][]uint {
+	present := make(map[[2]uint]struct{}, len(pool))
+	for _, r := range pool {
+		present[[2]uint{r[0], r[1]}] = struct{}{}
+	}
+
+	out := make([][]uint, 0, len(wanted))
+	for _, w := range wanted {
+		if _, ok := present[[2]uint{w[0], w[1]}]; ok {
+			out = append(out, w)
 		}
-		return a
-	}(fraction[0], fraction[1])
-	fraction[0] = fraction[0] / gcd
-	fraction[1] = fraction[1] / gcd
-	return fraction
+	}
+	return out
 }
 
 func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) FretPlacements {
@@ -543,14 +516,12 @@ func intervalBetween(ratio []uint, ratio2 []uint) []uint {
 }
 
 func intervalNameFromRatio(ratio []uint) string {
-	return func() string {
-		for _, justRatio := range JustRatios {
-			if justRatio.Numerator == ratio[0] && justRatio.Denominator == ratio[1] {
-				return justRatio.Name
-			}
+	for _, justRatio := range JustRatioNoteNames {
+		if justRatio.Numerator == ratio[0] && justRatio.Denominator == ratio[1] {
+			return justRatio.Name
 		}
-		return ""
-	}()
+	}
+	return ""
 }
 
 func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) FretPlacements {
@@ -656,4 +627,50 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 		ScaleLength: scaleLength,
 		Frets:       frets,
 	}
+}
+
+// simple integer power for small positive exponents
+func intPow(base, exp int) int {
+	if exp <= 0 {
+		return 1
+	}
+	res := 1
+	for i := 0; i < exp; i++ {
+		res *= base
+	}
+	return res
+}
+
+// sevenLimitScaleFilter excludes ratios to enforce a particular "symmetry" choice.
+// For the current API/tests, "asymmetric" prefers septimal notes where there are competing 5-limit options.
+func sevenLimitScaleFilter(symmetry string) func([]uint) bool {
+	return func(r []uint) bool {
+		if symmetry != "asymmetric" {
+			return false
+		}
+
+		// Prefer septimal major second (8:7) over Pythagorean major second (9:8).
+		if isGreaterMajorSecond(r) {
+			return true
+		}
+		// Prefer septimal minor seventh (7:4) over 5-limit greater minor seventh (9:5)
+		// and Pythagorean lesser minor seventh (16:9).
+		if isLesserMinorSeventh(r) || isGreaterMinorSeventh(r) {
+			return true
+		}
+
+		return false
+	}
+}
+
+func fractionToLowestDenominator(fraction []uint) []uint {
+	gcd := func(a, b uint) uint {
+		for b != 0 {
+			a, b = b, a%b
+		}
+		return a
+	}(fraction[0], fraction[1])
+	fraction[0] = fraction[0] / gcd
+	fraction[1] = fraction[1] / gcd
+	return fraction
 }

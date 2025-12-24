@@ -158,6 +158,43 @@ func Test_shouldReturnFretPlacementsForSymmetricJustChromaticScaleWithGreaterMaj
 	assert.Equal(t, "9:5", fretPlacements.Frets[9].Label)
 }
 
+func Test_shouldReturnFretPlacementsForAsymmetric7LimitJustChromaticScaleBasedOnPureRatios(t *testing.T) {
+	// Given
+	// Mike read the page at https://en.wikipedia.org/wiki/Five-limit_tuning
+
+	// When
+	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just7limitFromRatios"},
+	})
+
+	// Then
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "7-limit Just Intonation", fretPlacements.System)
+	assert.Equal(t, "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.", fretPlacements.Description)
+	assert.Equal(t, 12, len(fretPlacements.Frets))
+
+	fmt.Println(fretPlacements.Frets)
+
+	assert.Equal(t, "15:14", fretPlacements.Frets[0].Label)
+	assert.Equal(t, "8:7", fretPlacements.Frets[1].Label)
+	assert.Equal(t, "6:5", fretPlacements.Frets[2].Label)
+	assert.Equal(t, "5:4", fretPlacements.Frets[3].Label)
+	assert.Equal(t, "4:3", fretPlacements.Frets[4].Label)
+	assert.Equal(t, "7:5", fretPlacements.Frets[5].Label)
+	assert.Equal(t, "3:2", fretPlacements.Frets[6].Label)
+	assert.Equal(t, "8:5", fretPlacements.Frets[7].Label)
+	assert.Equal(t, "5:3", fretPlacements.Frets[8].Label)
+	assert.Equal(t, "7:4", fretPlacements.Frets[9].Label)
+	assert.Equal(t, "15:8", fretPlacements.Frets[10].Label)
+	assert.Equal(t, "2:1", fretPlacements.Frets[11].Label)
+}
+
 func Test_shouldReturnPtolemysIntenseDiatonicScaleInTheIonianModeWhenOnlyScaleLengthIsProvided(t *testing.T) {
 	// Given
 	// When
@@ -423,7 +460,7 @@ func Test_ShouldReturnErrorWhenTuningSystemIsInvalid(t *testing.T) {
 	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid tuning system"}`}, response)
 }
 
-func Test_ShouldReturnErrorWhenPtolemicDiatonicScaleIsInvalid(t *testing.T) {
+func Test_ShouldDefaultToIonianIfNonSensicalPtolemicDiatonicScaleIsProvided(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
@@ -432,7 +469,15 @@ func Test_ShouldReturnErrorWhenPtolemicDiatonicScaleIsInvalid(t *testing.T) {
 
 	// Then
 	assert.Nil(t, err)
-	assert.Equal(t, events.LambdaFunctionURLResponse{StatusCode: http.StatusUnprocessableEntity, Headers: headers, Body: `{"error":"please provide a valid mode for the diatonic scale"}`}, response)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, headers, response.Headers)
+
+	var fretPlacements handler.FretPlacements
+	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
+	assert.Equal(t, 540.0, fretPlacements.ScaleLength)
+	assert.Equal(t, "Ptolemy", fretPlacements.System)
+	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Ionian mode.", fretPlacements.Description)
+	assert.Equal(t, 7, len(fretPlacements.Frets))
 }
 
 func Test_shouldReturnQuarterCommaMeantonePlacementsWithProvidedScaleLength(t *testing.T) {
