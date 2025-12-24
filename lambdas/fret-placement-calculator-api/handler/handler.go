@@ -134,6 +134,12 @@ func (h Handler) HandleRequest(ctx context.Context, request events.LambdaFunctio
 			justSymmetry = request.QueryStringParameters["justSymmetry"]
 		}
 		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
+	case "just7limitFromRatios":
+		justSymmetry := "asymmetric"
+		if request.QueryStringParameters["justSymmetry"] != "" {
+			justSymmetry = request.QueryStringParameters["justSymmetry"]
+		}
+		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength, justSymmetry)
 	case "bachWellTemperament":
 		fretPlacements = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
 	default:
@@ -321,6 +327,76 @@ func isGreaterMinorSeventh(ratio []uint) bool {
 
 func ratioIsPerfect(ratio []uint) bool {
 	return (ratio[0] == 1 && ratio[1] == 1) || (ratio[0] == 4 && ratio[1] == 3) || (ratio[0] == 3 && ratio[1] == 2) || (ratio[0] == 2 && ratio[1] == 1)
+}
+
+// Modified function to produce 7-limit just intonation frets.
+// It reuses computeJustRatios by building multiplier lists that include 5 and 7 factors.
+func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
+	return FretPlacements{
+		System:      "7-limit Just Intonation",
+		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios (generated from small powers of 3,5,7).",
+		Frets:       h.ratiosToFretPlacements(scaleLength, computeSevenLimitJustRatios(symmetry)),
+	}
+}
+
+// computeSevenLimitJustRatios builds multipliers combining small powers of 5 and 7 (exponents -1..1)
+// and combines them with powers of 3 (as in the previous thirdPartialMultipliers).
+func computeSevenLimitJustRatios(symmetry string) [][]uint {
+	// powers of 3 used previously: 3^-2 .. 3^2
+	thirdPartialMultipliers := [][]uint{
+		{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1},
+	}
+
+	// build multipliers for combinations of 5^e5 * 7^e7 for e in {-1,0,1}
+	var fiveSevenMultipliers [][]uint
+	for e5 := -1; e5 <= 1; e5++ {
+		for e7 := -1; e7 <= 1; e7++ {
+			num := uint(1)
+			den := uint(1)
+
+			if e5 > 0 {
+				num *= uint(intPow(5, e5))
+			} else if e5 < 0 {
+				den *= uint(intPow(5, -e5))
+			}
+
+			if e7 > 0 {
+				num *= uint(intPow(7, e7))
+			} else if e7 < 0 {
+				den *= uint(intPow(7, -e7))
+			}
+
+			fiveSevenMultipliers = append(fiveSevenMultipliers, []uint{num, den})
+		}
+	}
+
+	// Use computeJustRatios to form full ratios and sort them.
+	ratios := computeJustRatios(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
+
+	// ensure deterministic ordering (computeJustRatios already sorts, but keep robustness)
+	slices.SortFunc(ratios, func(x, y []uint) int {
+		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
+	})
+	return ratios
+}
+
+// simple integer power for small positive exponents
+func intPow(base, exp int) int {
+	if exp <= 0 {
+		return 1
+	}
+	res := 1
+	for i := 0; i < exp; i++ {
+		res *= base
+	}
+	return res
+}
+
+// currently a no-op filter for 7-limit; can be extended to implement symmetry exclusions if desired.
+func sevenLimitScaleFilter(symmetry string) func([]uint) bool {
+	return func(r []uint) bool {
+		return false
+	}
 }
 
 func fractionToLowestDenominator(fraction []uint) []uint {
