@@ -27,7 +27,6 @@ tension of the string, type of instrument, etc.
 > | `tuningSystem`          | optional | string    | just       | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
 > | `diatonicMode`          | optional | string    | Ionian     | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
 > | `justSymmetry`          | optional | string    | asymmetric | Type of major seconds and minor sevenths to use in just scale                                               |
-> | `extendMeantone`        | optional | bool      | false      | Extend the meantone scale                                                                                   |
 > | `octaveDivisions`       | optional | int       | 31         | Number of divisions of the octave for equal temperament                                                     |
 > | `octaves`               | optional | int       | 1          | Number of octaves of frets to compute                                                                       |
 
@@ -38,6 +37,7 @@ tension of the string, type of instrument, etc.
 > | `just5limitFromRatios`      | 5-limit Just Intonation derived from pure ratios                                    |
 > | `just5limitFromPythagorean` | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
 > | `meantone`                  | Quarter-Comma Meantone                                                              |
+> | `extendedMeantone`          | Extended Quarter-Comma Meantone                                                     |
 > | `bachWellTemperament`       | Bach's Well Temperament (as decoded by Bradley Lehman)                              |
 > | `pythagorean`               | Pythagorean 3-limit just tuning                                                     |
 > | `equal`                     | Equal Temperament                                                                   |

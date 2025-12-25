@@ -179,8 +179,6 @@ func Test_shouldReturnFretPlacementsForAsymmetric7LimitJustChromaticScaleBasedOn
 	assert.Equal(t, "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.", fretPlacements.Description)
 	assert.Equal(t, 12, len(fretPlacements.Frets))
 
-	fmt.Println(fretPlacements.Frets)
-
 	assert.Equal(t, "15:14", fretPlacements.Frets[0].Label)
 	assert.Equal(t, "8:7", fretPlacements.Frets[1].Label)
 	assert.Equal(t, "6:5", fretPlacements.Frets[2].Label)
@@ -528,28 +526,11 @@ func Test_shouldReturnQuarterCommaMeantonePlacementsWithProvidedScaleLength(t *t
 	}, fretPlacements.Frets[12])
 }
 
-func Test_shouldReturnQuarterCommaMeantonePlacementsWithProvidedScaleLengthWhenExtendedParameterIsInvalid(t *testing.T) {
-	// Given
-	// When
-	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "meantone", "extended": "yes please"},
-	})
-
-	// Then
-	assert.Nil(t, err)
-	assert.Equal(t, response.StatusCode, http.StatusOK)
-	assert.Equal(t, response.Headers, headers)
-
-	fretPlacements := handler.FretPlacements{}
-	_ = json.Unmarshal([]byte(response.Body), &fretPlacements)
-	assert.Equal(t, "Fret positions for meantone computed by narrowing of fifths by 0.25 of a syntonic comma (81/80).  Nominal note names used given a tonic of D.", fretPlacements.Description)
-}
-
 func Test_shouldReturnExtendedQuarterCommaMeantonePlacementsWithProvidedScaleLength(t *testing.T) {
 	// Given
 	// When
 	response, err := handler.Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "meantone", "extended": "true"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "extendedMeantone"},
 	})
 
 	// Then

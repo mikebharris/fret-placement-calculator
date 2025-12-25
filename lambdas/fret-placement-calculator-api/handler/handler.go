@@ -67,8 +67,9 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 		fretPlacements = h.fretPlacementsForPythagoreanTuning(scaleLength)
 
 	case "meantone":
-		extended, _ := strconv.ParseBool(q["extended"])
-		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, extended)
+		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, false)
+	case "extendedMeantone":
+		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, true)
 
 	case "":
 		fallthrough
