@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -40,10 +39,8 @@ type FretPlacements struct {
 	Frets       []Fret  `json:"frets"`
 }
 
-type Ratio struct {
-	Numerator   uint
-	Denominator uint
-	Name        string
+func (i Interval) String() string {
+	return fmt.Sprintf("%d:%d", i.Numerator, i.Denominator)
 }
 
 func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
@@ -136,14 +133,15 @@ func isValidDiatonicMode(mode string) bool {
 }
 
 func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) FretPlacements {
+	intervals := computePythagoreanIntervals()
 	return FretPlacements{
 		System:      "Pythagorean",
 		Description: "Fret positions based on 3-limit Pythagorean ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, computePythagoreanRatios()),
+		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
 	}
 }
 
-func computePythagoreanRatios() [][]uint {
+func computePythagoreanIntervals() []Interval {
 	// divide by 3:2 = 4/9 * 2/3 = 16/27 = 2^3 : 3^3 = 16/27
 	// divide by 3:2 = 2/3 * 2/3 = 4/9 - octave reduce to 16:9
 	// divide by 3:2 = 2:3 - octave reduce to 4:3
@@ -153,38 +151,20 @@ func computePythagoreanRatios() [][]uint {
 	// multiply by 3:2 = 27:8 = 3^3:2^3 - octave reduce to 27:16
 	// multiply by 3:2 = 81:16 - octave reduce to 81:64 - 3^4:2^4 = 81:16
 
-	var thirdPartial = []uint{3, 2}
 	var thirdPartialsFromTonicToCompute = 6
-	var ratiosFromFundamental [][]uint
+	var intervals []Interval
 
 	for i := -thirdPartialsFromTonicToCompute; i <= thirdPartialsFromTonicToCompute; i++ {
-		t := math.Pow(float64(thirdPartial[0]), math.Abs(float64(i)))
-		b := math.Pow(float64(thirdPartial[1]), math.Abs(float64(i)))
 		if i < 0 {
-			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(b), uint(t)}))
+			intervals = append(intervals, perfectFifth.toPowerOf(i).reciprocal().octaveReduce())
 		} else if i > 0 {
-			ratiosFromFundamental = append(ratiosFromFundamental, octaveReduceIntegerRatio([]uint{uint(t), uint(b)}))
+			intervals = append(intervals, perfectFifth.toPowerOf(i).octaveReduce())
 		}
 	}
 
-	ratiosFromFundamental = append(ratiosFromFundamental, []uint{2, 1})
-
-	slices.SortFunc(ratiosFromFundamental, func(x, y []uint) int {
-		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
-	})
-	return ratiosFromFundamental
-}
-
-func octaveReduceIntegerRatio(ratio []uint) []uint {
-	for ratio[0]/ratio[1] >= 2.0 || ratio[0]/ratio[1] < 1.0 {
-		if ratio[0]/ratio[1] < 1.0 {
-			ratio[0] *= 2
-		}
-		if ratio[0]/ratio[1] >= 2.0 {
-			ratio[1] *= 2
-		}
-	}
-	return ratio
+	intervals = append(intervals, octave)
+	sortIntervals(intervals)
+	return intervals
 }
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) FretPlacements {
@@ -198,133 +178,105 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 	//	m7 : 16/9 → 9/5
 	//	M7 : 243/128 → 15/8
 
-	var acuteUnison = []uint{81, 80}
-	var graveUnison = []uint{80, 81}
+	var intervals []Interval
 
-	var ratios [][]uint
-
-	for _, ratio := range computePythagoreanRatios() {
-		if ratioIsPerfect(ratio) {
-			ratios = append(ratios, ratio)
+	for _, interval := range computePythagoreanIntervals() {
+		if interval.isPerfect() {
+			intervals = append(intervals, interval)
 			continue
 		}
 
-		graveRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * acuteUnison[0], ratio[1] * acuteUnison[1]}))
-		acuteRatio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{ratio[0] * graveUnison[0], ratio[1] * graveUnison[1]}))
+		graveRatio := interval.addTo(acuteUnison).toLowestDenominator().octaveReduce()
+		acuteRatio := interval.addTo(graveUnison).toLowestDenominator().octaveReduce()
 
-		if graveRatio[1] < acuteRatio[1] {
-			ratios = append(ratios, graveRatio)
+		if graveRatio.Denominator < acuteRatio.Denominator {
+			intervals = append(intervals, graveRatio)
 		} else {
-			ratios = append(ratios, acuteRatio)
+			intervals = append(intervals, acuteRatio)
 		}
 	}
 
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
 	}
 }
 
-// noteFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
-type noteFilterFunction func([]uint) bool
+// intervalFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
+type intervalFilterFunction func(ratio Interval) bool
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, computeFiveLimitJustRatios(symmetry)),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeFiveLimitJustIntervals(symmetry)),
 	}
 }
 
-func computeFiveLimitJustRatios(symmetry string) [][]uint {
+func computeFiveLimitJustIntervals(symmetry string) []Interval {
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
-	return computeJustRatios(fifthPartialMultipliers, thirdPartialMultipliers, fiveLimitScaleFilter(symmetry))
+	return computeJustIntervals(fifthPartialMultipliers, thirdPartialMultipliers, fiveLimitScaleFilter(symmetry))
 }
 
-func fiveLimitScaleFilter(symmetry string) func(r []uint) bool {
-	return func(r []uint) bool {
-		if symmetry == "asymmetric" && (isLesserMajorSecond(r) || isLesserMinorSeventh(r)) {
+func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
+	return func(interval Interval) bool {
+		if symmetry == "asymmetric" && (interval.isLesserMajorSecond() || interval.isLesserMinorSeventh()) {
 			return true
 		}
-		if symmetry == "symmetric1" && (isLesserMajorSecond(r) || isGreaterMinorSeventh(r)) {
+		if symmetry == "symmetric1" && (interval.isLesserMajorSecond() || interval.isGreaterMinorSeventh()) {
 			return true
 		}
-		if symmetry == "symmetric2" && (isGreaterMajorSecond(r) || isLesserMinorSeventh(r)) {
+		if symmetry == "symmetric2" && (interval.isGreaterMajorSecond() || interval.isLesserMinorSeventh()) {
 			return true
 		}
 		return false
 	}
 }
 
-func computeJustRatios(multiplier1, multiplier2 [][]uint, filter noteFilterFunction) [][]uint {
-	var ratios [][]uint
+func computeJustIntervals(multiplier1, multiplier2 [][]uint, filter intervalFilterFunction) []Interval {
+	var intervals []Interval
 	for _, tpm := range multiplier1 {
 		for _, fpm := range multiplier2 {
 			numerator := tpm[0] * fpm[0]
 			denominator := tpm[1] * fpm[1]
-			ratio := octaveReduceIntegerRatio(fractionToLowestDenominator([]uint{numerator, denominator}))
-			if isFundamental(ratio) || isDiminishedFifth(ratio) {
+			interval := Interval{Numerator: numerator, Denominator: denominator}.toLowestDenominator().octaveReduce()
+			if interval.isUnison() || interval.isDiminishedFifth() {
 				continue
 			}
-			if filter(ratio) {
+			if filter(interval) {
 				continue
 			}
-			ratios = append(ratios, ratio)
+			intervals = append(intervals, interval)
 		}
 	}
 
-	ratios = append(ratios, []uint{2, 1})
+	intervals = append(intervals, octave)
+	sortIntervals(intervals)
+	return intervals
+}
 
-	slices.SortFunc(ratios, func(x, y []uint) int {
-		return cmp.Compare(float64(x[0])/float64(x[1]), float64(y[0])/float64(y[1]))
+func sortIntervals(intervals []Interval) {
+	slices.SortFunc(intervals, func(i, j Interval) int {
+		return i.sortWith(j)
 	})
-	return ratios
-}
-
-func isFundamental(ratio []uint) bool {
-	return ratio[0] == 1 && ratio[1] == 1
-}
-
-func isLesserMajorSecond(ratio []uint) bool {
-	return ratio[0] == 10 && ratio[1] == 9
-}
-
-func isGreaterMajorSecond(ratio []uint) bool {
-	return ratio[0] == 9 && ratio[1] == 8
-}
-
-func isDiminishedFifth(ratio []uint) bool {
-	return ratio[0] == 64 && ratio[1] == 45
-}
-
-func isLesserMinorSeventh(ratio []uint) bool {
-	return ratio[0] == 16 && ratio[1] == 9
-}
-
-func isGreaterMinorSeventh(ratio []uint) bool {
-	return ratio[0] == 9 && ratio[1] == 5
-}
-
-func ratioIsPerfect(ratio []uint) bool {
-	return (ratio[0] == 1 && ratio[1] == 1) || (ratio[0] == 4 && ratio[1] == 3) || (ratio[0] == 3 && ratio[1] == 2) || (ratio[0] == 2 && ratio[1] == 1)
 }
 
 // Modified function to produce 7-limit just intonation frets.
-// It reuses computeJustRatios by building multiplier lists that include 5 and 7 factors.
+// It reuses computeJustIntervals by building multiplier lists that include 5 and 7 factors.
 func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
 	return FretPlacements{
 		System:      "7-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
-		Frets:       h.ratiosToFretPlacements(scaleLength, computeSevenLimitJustRatios(symmetry)),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeSevenLimitJustScale(symmetry)),
 	}
 }
 
-// computeSevenLimitJustRatios builds multipliers combining small powers of 5 and 7 (exponents -1..1)
+// computeSevenLimitJustScale builds multipliers combining small powers of 5 and 7 (exponents -1..1)
 // and combines them with powers of 3 (as in the previous thirdPartialMultipliers).
-func computeSevenLimitJustRatios(symmetry string) [][]uint {
-	// powers of 3 used previously: 3^-2 .. 3^2
+func computeSevenLimitJustScale(symmetry string) []Interval {
+	// powers of 3 used previously: 3^-2 ... 3^2
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 
 	// build multipliers for combinations of 5^e5 * 7^e7 for e in {-1,0,1}
@@ -349,36 +301,36 @@ func computeSevenLimitJustRatios(symmetry string) [][]uint {
 		}
 	}
 
-	pool := computeJustRatios(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
-	return selectRatiosFromPool(pool, sevenLimitWantedRatios())
+	pool := computeJustIntervals(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
+	return selectIntervalsFromPool(pool, sevenLimitWantedIntervals())
 }
 
-func sevenLimitWantedRatios() [][]uint {
-	return [][]uint{
-		{15, 14},
-		{8, 7},
-		{6, 5},
-		{5, 4},
-		{4, 3},
-		{7, 5},
-		{3, 2},
-		{8, 5},
-		{5, 3},
-		{7, 4},
-		{15, 8},
-		{2, 1},
+func sevenLimitWantedIntervals() []Interval {
+	return []Interval{
+		{Numerator: 15, Denominator: 14},
+		{Numerator: 8, Denominator: 7},
+		{Numerator: 6, Denominator: 5},
+		{Numerator: 5, Denominator: 4},
+		{Numerator: 4, Denominator: 3},
+		{Numerator: 7, Denominator: 5},
+		{Numerator: 3, Denominator: 2},
+		{Numerator: 8, Denominator: 5},
+		{Numerator: 5, Denominator: 3},
+		{Numerator: 7, Denominator: 4},
+		{Numerator: 15, Denominator: 8},
+		{Numerator: 2, Denominator: 1},
 	}
 }
 
-func selectRatiosFromPool(pool, wanted [][]uint) [][]uint {
+func selectIntervalsFromPool(pool, wanted []Interval) []Interval {
 	present := make(map[[2]uint]struct{}, len(pool))
 	for _, r := range pool {
-		present[[2]uint{r[0], r[1]}] = struct{}{}
+		present[[2]uint{r.Numerator, r.Denominator}] = struct{}{}
 	}
 
-	out := make([][]uint, 0, len(wanted))
+	out := make([]Interval, 0, len(wanted))
 	for _, w := range wanted {
-		if _, ok := present[[2]uint{w[0], w[1]}]; ok {
+		if _, ok := present[[2]uint{w.Numerator, w.Denominator}]; ok {
 			out = append(out, w)
 		}
 	}
@@ -386,44 +338,39 @@ func selectRatiosFromPool(pool, wanted [][]uint) [][]uint {
 }
 
 func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) FretPlacements {
-	var intervalMap = map[string][][]uint{
-		"Lydian":     {{9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}},
-		"Ionian":     {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}},
-		"Mixolydian": {{9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
-		"Dorian":     {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {10, 9}, {16, 15}, {9, 8}},
-		"Aeolian":    {{9, 8}, {16, 15}, {10, 9}, {9, 8}, {16, 15}, {9, 8}, {10, 9}},
-		"Phrygian":   {{16, 15}, {9, 8}, {10, 9}, {9, 8}, {16, 15}, {10, 9}, {9, 8}},
-		"Locrian":    {{16, 15}, {9, 8}, {10, 9}, {16, 15}, {9, 8}, {10, 9}, {9, 8}},
+	var intervalMap = map[string][]Interval{
+		"Lydian":     {greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
+		"Ionian":     {greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
+		"Mixolydian": {greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond},
+		"Dorian":     {greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond},
+		"Aeolian":    {greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond},
+		"Phrygian":   {diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond},
+		"Locrian":    {diatonicSemitone, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond},
 	}
 
-	var ratios = make([][]uint, 0)
-	var ratio = []uint{1, 1}
+	var intervals []Interval
+	var interval = unison
 
 	for i := 0; i < octaves; i++ {
 		for _, v := range intervalMap[mode] {
-			ratio = fractionToLowestDenominator(
-				[]uint{
-					ratio[0] * v[0], ratio[1] * v[1],
-				})
-
-			ratios = append(ratios, ratio)
+			interval = Interval{Numerator: interval.Numerator * v.Numerator, Denominator: interval.Denominator * v.Denominator}.toLowestDenominator()
+			intervals = append(intervals, interval)
 		}
 	}
 
 	return FretPlacements{
 		System:      "Ptolemy",
 		Description: fmt.Sprintf("Fret positions for Ptolemy's 5-limit intense diatonic scale in %s mode.", mode),
-		Frets:       h.ratiosToFretPlacements(scaleLength, ratios),
+		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
 	}
 }
 
 func (h Handler) fretPlacementsForSazTuning(scaleLength float64) FretPlacements {
-	// as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
 	return FretPlacements{
 		System:      "saz",
 		Description: "Fret positions for traditional Turkish Saz tuning ratios.",
 		ScaleLength: scaleLength,
-		Frets:       h.ratiosToFretPlacements(scaleLength, [][]uint{{18, 17}, {12, 11}, {9, 8}, {81, 68}, {27, 22}, {81, 64}, {4, 3}, {24, 17}, {16, 11}, {3, 2}, {27, 17}, {18, 11}, {27, 16}, {16, 9}, {32, 17}, {64, 33}, {2, 1}}),
+		Frets:       h.intervalsToFretPlacements(scaleLength, sazIntervals),
 	}
 }
 
@@ -487,42 +434,19 @@ func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64
 	}
 }
 
-func (h Handler) ratiosToFretPlacements(scaleLength float64, ratios [][]uint) []Fret {
+func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []Interval) []Fret {
 	var frets []Fret
-	var previousRatio = []uint{1, 1}
-	for _, ratio := range ratios {
-		distanceFromNut := math.Round((scaleLength-(scaleLength/float64(ratio[0]))*float64(ratio[1]))*100) / 100
-		interval := intervalBetween(ratio, previousRatio)
+	var previousInterval = unison
+	for _, intervalOfNote := range intervals {
 		frets = append(frets, Fret{
-			Label:    fmt.Sprintf("%d:%d", ratio[0], ratio[1]),
-			Position: distanceFromNut,
-			Comment:  intervalNameFromRatio(ratio),
-			Interval: fmt.Sprintf("%d:%d", interval[0], interval[1]),
+			Label:    intervalOfNote.toString(),
+			Position: intervalOfNote.fretPosition(scaleLength),
+			Comment:  intervalOfNote.name(),
+			Interval: intervalOfNote.subtract(previousInterval).octaveReduce().toLowestDenominator().toString(),
 		})
-		previousRatio = ratio
+		previousInterval = intervalOfNote
 	}
 	return frets
-}
-
-func intervalBetween(ratio []uint, ratio2 []uint) []uint {
-	t := ratio[0] * ratio2[1]
-	b := ratio[1] * ratio2[0]
-	i := cmp.Compare(float64(t)/float64(b), 1.0)
-	if i < 0 {
-		return fractionToLowestDenominator([]uint{b, t})
-	} else if i > 0 {
-		return fractionToLowestDenominator([]uint{t, b})
-	}
-	return ratio
-}
-
-func intervalNameFromRatio(ratio []uint) string {
-	for _, justRatio := range JustRatioNoteNames {
-		if justRatio.Numerator == ratio[0] && justRatio.Denominator == ratio[1] {
-			return justRatio.Name
-		}
-	}
-	return ""
 }
 
 func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) FretPlacements {
@@ -562,7 +486,6 @@ func octaveReduceFloat(ratio float64) float64 {
 // Reference: https://academic.oup.com/em/article-abstract/33/1/3/535436?redirectedFrom=fulltext
 func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) FretPlacements {
 	// Narrowing of the fifths as outlined by Lehman
-	syntonicComma := 81.0 / 80.0
 	temperingFractions := []float64{
 		0.0,         // Pure fifth
 		-1.0 / 12.0, // Twelfth-comma narrowed
@@ -581,7 +504,7 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 	// Calculate tempered fifths
 	temperedFifths := make([]float64, 12)
 	for i := 0; i < 12; i++ {
-		temperedFifths[i] = 3.0 / 2.0 * math.Pow(syntonicComma, temperingFractions[i])
+		temperedFifths[i] = 3.0 / 2.0 * math.Pow(syntonicComma.toFloat(), temperingFractions[i])
 	}
 
 	// Derive ratios by walking the circle of fifths
@@ -644,34 +567,22 @@ func intPow(base, exp int) int {
 
 // sevenLimitScaleFilter excludes ratios to enforce a particular "symmetry" choice.
 // For the current API/tests, "asymmetric" prefers septimal notes where there are competing 5-limit options.
-func sevenLimitScaleFilter(symmetry string) func([]uint) bool {
-	return func(r []uint) bool {
+func sevenLimitScaleFilter(symmetry string) func(i Interval) bool {
+	return func(i Interval) bool {
 		if symmetry != "asymmetric" {
 			return false
 		}
 
 		// Prefer septimal major second (8:7) over Pythagorean major second (9:8).
-		if isGreaterMajorSecond(r) {
+		if i.isGreaterMajorSecond() {
 			return true
 		}
 		// Prefer septimal minor seventh (7:4) over 5-limit greater minor seventh (9:5)
 		// and Pythagorean lesser minor seventh (16:9).
-		if isLesserMinorSeventh(r) || isGreaterMinorSeventh(r) {
+		if i.isLesserMinorSeventh() || i.isGreaterMinorSeventh() {
 			return true
 		}
 
 		return false
 	}
-}
-
-func fractionToLowestDenominator(fraction []uint) []uint {
-	gcd := func(a, b uint) uint {
-		for b != 0 {
-			a, b = b, a%b
-		}
-		return a
-	}(fraction[0], fraction[1])
-	fraction[0] = fraction[0] / gcd
-	fraction[1] = fraction[1] / gcd
-	return fraction
 }
