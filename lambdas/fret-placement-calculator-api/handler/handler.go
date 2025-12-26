@@ -186,8 +186,8 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 			continue
 		}
 
-		graveRatio := interval.addTo(acuteUnison).toLowestDenominator().octaveReduce()
-		acuteRatio := interval.addTo(graveUnison).toLowestDenominator().octaveReduce()
+		graveRatio := interval.add(acuteUnison)
+		acuteRatio := interval.add(graveUnison)
 
 		if graveRatio.Denominator < acuteRatio.Denominator {
 			intervals = append(intervals, graveRatio)
@@ -375,9 +375,8 @@ func (h Handler) fretPlacementsForSazTuning(scaleLength float64) FretPlacements 
 }
 
 func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) FretPlacements {
-	syntonicComma := 81.0 / 80.0
 	fractionOfSyntonicCommaToTemperFifthsBy := 0.25
-	temperedFifth := 3.0 / 2.0 * math.Pow(syntonicComma, -fractionOfSyntonicCommaToTemperFifthsBy)
+	temperedFifth := perfectFifth.toFloat() * math.Pow(syntonicComma.toFloat(), -fractionOfSyntonicCommaToTemperFifthsBy)
 
 	var fifthsFromTonic int
 	var noteNames []string

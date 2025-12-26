@@ -40,11 +40,11 @@ func (i Interval) isGreaterMinorSeventh() bool {
 	return i.Numerator == 9 && i.Denominator == 5
 }
 
-func (i Interval) addTo(other Interval) Interval {
+func (i Interval) add(other Interval) Interval {
 	return Interval{
 		Numerator:   i.Numerator * other.Numerator,
 		Denominator: i.Denominator * other.Denominator,
-	}
+	}.toLowestDenominator()
 }
 
 func (i Interval) isPerfectFourth() bool {
