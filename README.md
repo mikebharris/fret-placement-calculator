@@ -137,7 +137,7 @@ An example Terraform build and deploy command line:
 
 ```shell
 go run pipeline.go --stage=build
-AWS_ACCESS_KEY_ID=???? AWS_SECRET_ACCESS_KEY=???? go run pipeline.go --account-number=123456789012 --app-name=fret-placement-calculator --environment=prod --region=us-east-1 --stage=plan
+AWS_ACCESS_KEY_ID=???? AWS_SECRET_ACCESS_KEY=???? go run pipeline.go --account-number=123456789012 --app-name=fret-placement-calculator --environment=prod --region=us-east-1 --stage=apply --confirm=true
 ````
 
 Refer to the documentation in that project for more details on how to use the deployment helper tool.
