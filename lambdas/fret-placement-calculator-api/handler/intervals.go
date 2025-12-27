@@ -4,12 +4,17 @@ import (
 	"cmp"
 	"fmt"
 	"math"
+	"slices"
 )
 
 type Interval struct {
 	Numerator   uint   `json:"numerator"`
 	Denominator uint   `json:"denominator"`
 	Name        string `json:"name,omitempty"`
+}
+
+func newInterval(numerator, denominator uint) Interval {
+	return Interval{Numerator: numerator, Denominator: denominator}.simplify()
 }
 
 func (i Interval) isUnison() bool {
@@ -44,7 +49,7 @@ func (i Interval) add(other Interval) Interval {
 	return Interval{
 		Numerator:   i.Numerator * other.Numerator,
 		Denominator: i.Denominator * other.Denominator,
-	}.toLowestDenominator()
+	}.simplify()
 }
 
 func (i Interval) isPerfectFourth() bool {
@@ -63,7 +68,13 @@ func (i Interval) isOctave() bool {
 	return i.Numerator == 2 && i.Denominator == 1
 }
 
-func (i Interval) toLowestDenominator() Interval {
+func (i Interval) simplify() Interval {
+	if i.Denominator == 0 {
+		return i
+	}
+	if i.Numerator == 0 {
+		return Interval{Numerator: 0, Denominator: 1}
+	}
 	gcd := func(a, b uint) uint {
 		for b != 0 {
 			a, b = b, a%b
@@ -87,14 +98,19 @@ func (i Interval) octaveReduce() Interval {
 	return i
 }
 
+func (i Interval) lessThan(other Interval) bool {
+	return i.Numerator*other.Denominator < other.Numerator*i.Denominator
+}
+
+func (i Interval) greaterThan(other Interval) bool {
+	return !i.lessThan(other) && !i.isEqualTo(other)
+}
+
 func (i Interval) subtract(other Interval) Interval {
-	t := i.Numerator * other.Denominator
-	b := i.Denominator * other.Numerator
-	diff := cmp.Compare(float64(t)/float64(b), 1.0)
-	if diff < 0 {
-		return Interval{b, t, ""}.toLowestDenominator()
-	} else if diff > 0 {
-		return Interval{t, b, ""}.toLowestDenominator()
+	if i.lessThan(other) {
+		return Interval{Numerator: i.Denominator * other.Numerator, Denominator: i.Numerator * other.Denominator}.simplify()
+	} else if i.greaterThan(other) {
+		return Interval{Numerator: i.Numerator * other.Denominator, Denominator: i.Denominator * other.Numerator}.simplify()
 	}
 	return i
 }
@@ -179,7 +195,7 @@ func (i Interval) fretPosition(scaleLength float64) float64 {
 	return math.Round((scaleLength-(scaleLength/float64(i.Numerator))*float64(i.Denominator))*100) / 100
 }
 
-func (i Interval) toString() string {
+func (i Interval) String() string {
 	return fmt.Sprintf("%d:%d", i.Numerator, i.Denominator)
 }
 
@@ -196,4 +212,10 @@ func intervalsFromIntegers(integers [][]uint) []Interval {
 
 func fromIntArray(i []uint) Interval {
 	return Interval{Numerator: i[0], Denominator: i[1]}
+}
+
+func sortIntervals(intervals []Interval) {
+	slices.SortFunc(intervals, func(i, j Interval) int {
+		return i.sortWith(j)
+	})
 }

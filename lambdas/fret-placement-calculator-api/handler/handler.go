@@ -39,10 +39,6 @@ type FretPlacements struct {
 	Frets       []Fret  `json:"frets"`
 }
 
-func (i Interval) String() string {
-	return fmt.Sprintf("%d:%d", i.Numerator, i.Denominator)
-}
-
 func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 	q := request.QueryStringParameters
 
@@ -235,13 +231,13 @@ func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
 	}
 }
 
-func computeJustIntervals(multiplier1, multiplier2 [][]uint, filter intervalFilterFunction) []Interval {
+func computeJustIntervals(multiplierListA, multiplierListB [][]uint, filter intervalFilterFunction) []Interval {
 	var intervals []Interval
-	for _, tpm := range multiplier1 {
-		for _, fpm := range multiplier2 {
-			numerator := tpm[0] * fpm[0]
-			denominator := tpm[1] * fpm[1]
-			interval := Interval{Numerator: numerator, Denominator: denominator}.toLowestDenominator().octaveReduce()
+	for _, multiplierA := range multiplierListA {
+		for _, multiplierB := range multiplierListB {
+			numerator := multiplierA[0] * multiplierB[0]
+			denominator := multiplierA[1] * multiplierB[1]
+			interval := Interval{Numerator: numerator, Denominator: denominator}.octaveReduce()
 			if interval.isUnison() || interval.isDiminishedFifth() {
 				continue
 			}
@@ -255,12 +251,6 @@ func computeJustIntervals(multiplier1, multiplier2 [][]uint, filter intervalFilt
 	intervals = append(intervals, octave)
 	sortIntervals(intervals)
 	return intervals
-}
-
-func sortIntervals(intervals []Interval) {
-	slices.SortFunc(intervals, func(i, j Interval) int {
-		return i.sortWith(j)
-	})
 }
 
 // Modified function to produce 7-limit just intonation frets.
@@ -353,7 +343,7 @@ func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength floa
 
 	for i := 0; i < octaves; i++ {
 		for _, v := range intervalMap[mode] {
-			interval = Interval{Numerator: interval.Numerator * v.Numerator, Denominator: interval.Denominator * v.Denominator}.toLowestDenominator()
+			interval = Interval{Numerator: interval.Numerator * v.Numerator, Denominator: interval.Denominator * v.Denominator}.simplify()
 			intervals = append(intervals, interval)
 		}
 	}
@@ -391,7 +381,7 @@ func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64
 
 	var ratiosOfNotesToFundamental []float64
 	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, octaveReduceFloat(math.Pow(temperedFifth, float64(i))))
+		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, h.octaveReduceFloat(math.Pow(temperedFifth, float64(i))))
 	}
 
 	slices.Sort(ratiosOfNotesToFundamental)
@@ -438,10 +428,10 @@ func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []Inte
 	var previousInterval = unison
 	for _, intervalOfNote := range intervals {
 		frets = append(frets, Fret{
-			Label:    intervalOfNote.toString(),
+			Label:    intervalOfNote.String(),
 			Position: intervalOfNote.fretPosition(scaleLength),
 			Comment:  intervalOfNote.name(),
-			Interval: intervalOfNote.subtract(previousInterval).octaveReduce().toLowestDenominator().toString(),
+			Interval: intervalOfNote.subtract(previousInterval).String(),
 		})
 		previousInterval = intervalOfNote
 	}
@@ -449,9 +439,8 @@ func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []Inte
 }
 
 func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) FretPlacements {
-	system := fmt.Sprintf("%d-TET", divisionsOfOctave)
 	fretPlacements := FretPlacements{
-		System:      system,
+		System:      fmt.Sprintf("%d-TET", divisionsOfOctave),
 		Description: fmt.Sprintf("Fret positions for %d-tone equal temperament.", divisionsOfOctave),
 		ScaleLength: scaleLength,
 		Frets:       nil,
@@ -467,7 +456,7 @@ func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, di
 	return fretPlacements
 }
 
-func octaveReduceFloat(ratio float64) float64 {
+func (h Handler) octaveReduceFloat(ratio float64) float64 {
 	for ratio >= 2.0 || ratio < 1.0 {
 		if ratio >= 2.0 {
 			ratio /= 2.0
@@ -515,7 +504,7 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 
 	// Reduce ratios to within the octave [1.0, 2.0)
 	for i := range ratios {
-		ratios[i] = octaveReduceFloat(ratios[i])
+		ratios[i] = h.octaveReduceFloat(ratios[i])
 	}
 
 	slices.Sort(ratios) // Sort the ratios in ascending order
