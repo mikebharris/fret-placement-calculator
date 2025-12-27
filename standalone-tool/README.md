@@ -1,4 +1,4 @@
-# Fret Placement Calculator
+# Fret Placement Calculator - Standalone tool (original code)
 
 Outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for various tunings, including:
 
