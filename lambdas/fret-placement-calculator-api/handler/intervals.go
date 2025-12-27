@@ -129,7 +129,7 @@ func (i Interval) toFloat() float64 {
 }
 
 func (i Interval) toPowerOf(p int) Interval {
-	return Interval{uint(math.Pow(float64(perfectFifth.Numerator), math.Abs(float64(p)))), uint(math.Pow(float64(perfectFifth.Denominator), math.Abs(float64(p)))), ""}
+	return Interval{uint(math.Pow(float64(i.Numerator), math.Abs(float64(p)))), uint(math.Pow(float64(i.Denominator), math.Abs(float64(p)))), ""}
 }
 
 func (i Interval) reciprocal() Interval {
