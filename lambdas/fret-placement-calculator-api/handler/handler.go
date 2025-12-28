@@ -429,7 +429,7 @@ func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []Inte
 	for _, intervalOfNote := range intervals {
 		frets = append(frets, Fret{
 			Label:    intervalOfNote.String(),
-			Position: intervalOfNote.fretPosition(scaleLength),
+			Position: math.Round((scaleLength-(scaleLength/float64(intervalOfNote.Numerator))*float64(intervalOfNote.Denominator))*100) / 100,
 			Comment:  intervalOfNote.name(),
 			Interval: intervalOfNote.subtract(previousInterval).String(),
 		})

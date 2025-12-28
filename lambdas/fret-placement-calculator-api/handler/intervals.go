@@ -191,10 +191,6 @@ func (i Interval) sortWith(j Interval) int {
 	return cmp.Compare(float64(i.Numerator)/float64(i.Denominator), float64(j.Numerator)/float64(j.Denominator))
 }
 
-func (i Interval) fretPosition(scaleLength float64) float64 {
-	return math.Round((scaleLength-(scaleLength/float64(i.Numerator))*float64(i.Denominator))*100) / 100
-}
-
 func (i Interval) String() string {
 	return fmt.Sprintf("%d:%d", i.Numerator, i.Denominator)
 }
