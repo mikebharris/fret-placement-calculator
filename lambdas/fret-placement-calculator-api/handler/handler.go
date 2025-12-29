@@ -76,7 +76,7 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
 
 	case "just7limitFromRatios":
-		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
+		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength)
 
 	case "bachWellTemperament":
 		fretPlacements = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
@@ -203,17 +203,13 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 type intervalFilterFunction func(ratio Interval) bool
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
+	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
+	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
 	return FretPlacements{
 		System:      "5-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, computeFiveLimitJustIntervals(symmetry)),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(createMultiplierTableOf(thirdPartialMultipliers, fifthPartialMultipliers), fiveLimitScaleFilter(symmetry))),
 	}
-}
-
-func computeFiveLimitJustIntervals(symmetry string) []Interval {
-	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
-	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
-	return computeJustIntervals(createMultiplierTableOf(thirdPartialMultipliers, fifthPartialMultipliers), fiveLimitScaleFilter(symmetry))
 }
 
 func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
@@ -231,7 +227,13 @@ func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
 	}
 }
 
-func computeJustIntervals(multiplierList [][]uint, filter intervalFilterFunction) []Interval {
+func nullScaleFilter() func(interval Interval) bool {
+	return func(interval Interval) bool {
+		return false
+	}
+}
+
+func justIntervalsFromMultipliers(multiplierList [][]uint, filter intervalFilterFunction) []Interval {
 	var intervals []Interval
 	for _, multiplier := range multiplierList {
 		interval := Interval{Numerator: multiplier[0], Denominator: multiplier[1]}.octaveReduce()
@@ -249,53 +251,52 @@ func computeJustIntervals(multiplierList [][]uint, filter intervalFilterFunction
 }
 
 func createMultiplierTableOf(multiplierListA, multiplierListB [][]uint) [][]uint {
-	var bar [][]uint
+	var multiplierTable [][]uint
 	for _, multiplierA := range multiplierListA {
 		for _, multiplierB := range multiplierListB {
-			bar = append(bar, []uint{multiplierA[0] * multiplierB[0], multiplierA[1] * multiplierB[1]})
+			multiplierTable = append(multiplierTable, []uint{multiplierA[0] * multiplierB[0], multiplierA[1] * multiplierB[1]})
 		}
 	}
-	return bar
+	return multiplierTable
 }
 
-// Modified function to produce 7-limit just intonation frets.
-// It reuses computeJustIntervals by building multiplier lists that include 5 and 7 factors.
-func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
-	return FretPlacements{
-		System:      "7-limit Just Intonation",
-		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, computeSevenLimitJustScale()),
-	}
-}
-
-func computeSevenLimitJustScale() []Interval {
+func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) FretPlacements {
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 	fifthPartialMultipliers := [][]uint{{1, 5}, {1, 1}, {5, 1}}
 	seventhPartialMultipliers := [][]uint{{1, 7}, {1, 1}, {7, 1}}
 
 	sevenLimitMultipliers := createMultiplierTableOf(createMultiplierTableOf(seventhPartialMultipliers, fifthPartialMultipliers), thirdPartialMultipliers)
-	sevenLimitIntervalPool := computeJustIntervals(sevenLimitMultipliers, func(interval Interval) bool { return false })
+
+	return FretPlacements{
+		System:      "7-limit Just Intonation",
+		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(sevenLimitMultipliers, nullScaleFilter())),
+	}
+}
+
+func computeJustScale(multipliers [][]uint, filter intervalFilterFunction) []Interval {
+	poolOfPotentialIntervals := justIntervalsFromMultipliers(multipliers, filter)
 
 	var preferredIntervals []Interval
-
-	for r := float64(50); r <= 1200; r += 100 {
-		var intervalsInRange []Interval
-		for _, interval := range sevenLimitIntervalPool {
+	centsInOctave := 1200.0
+	for r := 50.0; r <= centsInOctave; r += 100 {
+		var intervalsInNoteRange []Interval
+		for _, interval := range poolOfPotentialIntervals {
 			cents := interval.toCents()
 			if cents >= r && cents < r+100 {
-				intervalsInRange = append(intervalsInRange, interval)
+				intervalsInNoteRange = append(intervalsInNoteRange, interval)
 			}
 		}
+
 		//   chosen interval is the simplest integer ratio
 		var chosenInterval Interval
-		chosenInterval = intervalsInRange[0]
-		for _, interval := range intervalsInRange {
-			if interval.Numerator < chosenInterval.Numerator && interval.Denominator < chosenInterval.Denominator {
+		for i, interval := range intervalsInNoteRange {
+			if i == 0 || (interval.Numerator < chosenInterval.Numerator && interval.Denominator < chosenInterval.Denominator) {
 				chosenInterval = interval
+				continue
 			}
 		}
 		preferredIntervals = append(preferredIntervals, chosenInterval)
-
 	}
 
 	return preferredIntervals
