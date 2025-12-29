@@ -195,6 +195,10 @@ func (i Interval) String() string {
 	return fmt.Sprintf("%d:%d", i.Numerator, i.Denominator)
 }
 
+func (i Interval) toCents() float64 {
+	return math.Log10(float64(i.Numerator)/float64(i.Denominator)) / math.Log10(2) * 1200
+}
+
 // as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
 var sazIntervals = intervalsFromIntegers([][]uint{{18, 17}, {12, 11}, {9, 8}, {81, 68}, {27, 22}, {81, 64}, {4, 3}, {24, 17}, {16, 11}, {3, 2}, {27, 17}, {18, 11}, {27, 16}, {16, 9}, {32, 17}, {64, 33}, {2, 1}})
 

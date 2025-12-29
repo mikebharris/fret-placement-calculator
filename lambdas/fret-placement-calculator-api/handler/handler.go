@@ -213,7 +213,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scal
 func computeFiveLimitJustIntervals(symmetry string) []Interval {
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
 	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
-	return computeJustIntervals(fifthPartialMultipliers, thirdPartialMultipliers, fiveLimitScaleFilter(symmetry))
+	return computeJustIntervals(createMultiplierTableOf(thirdPartialMultipliers, fifthPartialMultipliers), fiveLimitScaleFilter(symmetry))
 }
 
 func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
@@ -231,26 +231,31 @@ func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
 	}
 }
 
-func computeJustIntervals(multiplierListA, multiplierListB [][]uint, filter intervalFilterFunction) []Interval {
+func computeJustIntervals(multiplierList [][]uint, filter intervalFilterFunction) []Interval {
 	var intervals []Interval
-	for _, multiplierA := range multiplierListA {
-		for _, multiplierB := range multiplierListB {
-			numerator := multiplierA[0] * multiplierB[0]
-			denominator := multiplierA[1] * multiplierB[1]
-			interval := Interval{Numerator: numerator, Denominator: denominator}.octaveReduce()
-			if interval.isUnison() || interval.isDiminishedFifth() {
-				continue
-			}
-			if filter(interval) {
-				continue
-			}
-			intervals = append(intervals, interval)
+	for _, multiplier := range multiplierList {
+		interval := Interval{Numerator: multiplier[0], Denominator: multiplier[1]}.octaveReduce()
+		if interval.isUnison() || interval.isDiminishedFifth() {
+			continue
 		}
+		if filter(interval) {
+			continue
+		}
+		intervals = append(intervals, interval)
 	}
-
 	intervals = append(intervals, octave)
 	sortIntervals(intervals)
 	return intervals
+}
+
+func createMultiplierTableOf(multiplierListA, multiplierListB [][]uint) [][]uint {
+	var bar [][]uint
+	for _, multiplierA := range multiplierListA {
+		for _, multiplierB := range multiplierListB {
+			bar = append(bar, []uint{multiplierA[0] * multiplierB[0], multiplierA[1] * multiplierB[1]})
+		}
+	}
+	return bar
 }
 
 // Modified function to produce 7-limit just intonation frets.
@@ -259,72 +264,41 @@ func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scal
 	return FretPlacements{
 		System:      "7-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, computeSevenLimitJustScale(symmetry)),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeSevenLimitJustScale()),
 	}
 }
 
-// computeSevenLimitJustScale builds multipliers combining small powers of 5 and 7 (exponents -1..1)
-// and combines them with powers of 3 (as in the previous thirdPartialMultipliers).
-func computeSevenLimitJustScale(symmetry string) []Interval {
-	// powers of 3 used previously: 3^-2 ... 3^2
+func computeSevenLimitJustScale() []Interval {
 	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
+	fifthPartialMultipliers := [][]uint{{1, 5}, {1, 1}, {5, 1}}
+	seventhPartialMultipliers := [][]uint{{1, 7}, {1, 1}, {7, 1}}
 
-	// build multipliers for combinations of 5^e5 * 7^e7 for e in {-1,0,1}
-	var fiveSevenMultipliers [][]uint
-	for e5 := -1; e5 <= 1; e5++ {
-		for e7 := -1; e7 <= 1; e7++ {
-			num, den := uint(1), uint(1)
+	sevenLimitMultipliers := createMultiplierTableOf(createMultiplierTableOf(seventhPartialMultipliers, fifthPartialMultipliers), thirdPartialMultipliers)
+	sevenLimitIntervalPool := computeJustIntervals(sevenLimitMultipliers, func(interval Interval) bool { return false })
 
-			if e5 > 0 {
-				num *= uint(intPow(5, e5))
-			} else if e5 < 0 {
-				den *= uint(intPow(5, -e5))
+	var preferredIntervals []Interval
+
+	for r := float64(50); r <= 1200; r += 100 {
+		var intervalsInRange []Interval
+		for _, interval := range sevenLimitIntervalPool {
+			cents := interval.toCents()
+			if cents >= r && cents < r+100 {
+				intervalsInRange = append(intervalsInRange, interval)
 			}
-
-			if e7 > 0 {
-				num *= uint(intPow(7, e7))
-			} else if e7 < 0 {
-				den *= uint(intPow(7, -e7))
+		}
+		//   chosen interval is the simplest integer ratio
+		var chosenInterval Interval
+		chosenInterval = intervalsInRange[0]
+		for _, interval := range intervalsInRange {
+			if interval.Numerator < chosenInterval.Numerator && interval.Denominator < chosenInterval.Denominator {
+				chosenInterval = interval
 			}
-
-			fiveSevenMultipliers = append(fiveSevenMultipliers, []uint{num, den})
 		}
+		preferredIntervals = append(preferredIntervals, chosenInterval)
+
 	}
 
-	pool := computeJustIntervals(fiveSevenMultipliers, thirdPartialMultipliers, sevenLimitScaleFilter(symmetry))
-	return selectIntervalsFromPool(pool, sevenLimitWantedIntervals())
-}
-
-func sevenLimitWantedIntervals() []Interval {
-	return []Interval{
-		{Numerator: 15, Denominator: 14},
-		{Numerator: 8, Denominator: 7},
-		{Numerator: 6, Denominator: 5},
-		{Numerator: 5, Denominator: 4},
-		{Numerator: 4, Denominator: 3},
-		{Numerator: 7, Denominator: 5},
-		{Numerator: 3, Denominator: 2},
-		{Numerator: 8, Denominator: 5},
-		{Numerator: 5, Denominator: 3},
-		{Numerator: 7, Denominator: 4},
-		{Numerator: 15, Denominator: 8},
-		{Numerator: 2, Denominator: 1},
-	}
-}
-
-func selectIntervalsFromPool(pool, wanted []Interval) []Interval {
-	present := make(map[[2]uint]struct{}, len(pool))
-	for _, r := range pool {
-		present[[2]uint{r.Numerator, r.Denominator}] = struct{}{}
-	}
-
-	out := make([]Interval, 0, len(wanted))
-	for _, w := range wanted {
-		if _, ok := present[[2]uint{w.Numerator, w.Denominator}]; ok {
-			out = append(out, w)
-		}
-	}
-	return out
+	return preferredIntervals
 }
 
 func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) FretPlacements {
@@ -538,39 +512,5 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 		Description: description,
 		ScaleLength: scaleLength,
 		Frets:       frets,
-	}
-}
-
-// simple integer power for small positive exponents
-func intPow(base, exp int) int {
-	if exp <= 0 {
-		return 1
-	}
-	res := 1
-	for i := 0; i < exp; i++ {
-		res *= base
-	}
-	return res
-}
-
-// sevenLimitScaleFilter excludes ratios to enforce a particular "symmetry" choice.
-// For the current API/tests, "asymmetric" prefers septimal notes where there are competing 5-limit options.
-func sevenLimitScaleFilter(symmetry string) func(i Interval) bool {
-	return func(i Interval) bool {
-		if symmetry != "asymmetric" {
-			return false
-		}
-
-		// Prefer septimal major second (8:7) over Pythagorean major second (9:8).
-		if i.isGreaterMajorSecond() {
-			return true
-		}
-		// Prefer septimal minor seventh (7:4) over 5-limit greater minor seventh (9:5)
-		// and Pythagorean lesser minor seventh (16:9).
-		if i.isLesserMinorSeventh() || i.isGreaterMinorSeventh() {
-			return true
-		}
-
-		return false
 	}
 }
