@@ -104,7 +104,7 @@ type Fret struct {
 	Comment  string  `json:"comment,omitempty"`
 }
 
-type FretPlacements struct {
+type Fretboard struct {
 	System      string  `json:"system"`
 	Description string  `json:"description, omitempty"`
 	ScaleLength float64 `json:"scaleLength"`
@@ -115,19 +115,19 @@ func (s *steps) iAmProvidedWithTheFretPlacementsFor5LimitChromaticJustIntonation
 	assert.Equal(s.t, responseFromLambda.Headers["Content-Type"], "application/json")
 	assert.Equal(s.t, http.StatusOK, responseFromLambda.StatusCode)
 
-	fretPlacements := FretPlacements{}
-	if err := json.Unmarshal([]byte(responseFromLambda.Body), &fretPlacements); err != nil {
+	fretboard := Fretboard{}
+	if err := json.Unmarshal([]byte(responseFromLambda.Body), &fretboard); err != nil {
 		return fmt.Errorf("unmarshalling result: %s", err)
 	}
 
-	assert.Equal(s.t, "5-limit Just Intonation", fretPlacements.System)
-	assert.Equal(s.t, 540.0, fretPlacements.ScaleLength)
-	assert.Equal(s.t, 13, len(fretPlacements.Frets))
+	assert.Equal(s.t, "5-limit Just Intonation", fretboard.System)
+	assert.Equal(s.t, 540.0, fretboard.ScaleLength)
+	assert.Equal(s.t, 13, len(fretboard.Frets))
 
-	assert.Equal(s.t, "10:9", fretPlacements.Frets[1].Label)
-	assert.Equal(s.t, 54.00, fretPlacements.Frets[1].Position)
+	assert.Equal(s.t, "10:9", fretboard.Frets[1].Label)
+	assert.Equal(s.t, 54.00, fretboard.Frets[1].Position)
 
-	assert.Equal(s.t, "2:1", fretPlacements.Frets[12].Label)
-	assert.Equal(s.t, 270.0, fretPlacements.Frets[12].Position)
+	assert.Equal(s.t, "2:1", fretboard.Frets[12].Label)
+	assert.Equal(s.t, 270.0, fretboard.Frets[12].Position)
 	return nil
 }

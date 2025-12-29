@@ -16,6 +16,7 @@ const (
 	defaultEqualTemperamentDivisions = 31
 	defaultJustSymmetry              = "asymmetric"
 	defaultOctavesToCompute          = 1
+	defaultJustLimit                 = 5
 )
 
 var headers = map[string]string{
@@ -32,7 +33,7 @@ type Fret struct {
 	Interval string  `json:"interval,omitempty"`
 }
 
-type FretPlacements struct {
+type Fretboard struct {
 	System      string  `json:"system"`
 	Description string  `json:"description,omitempty"`
 	ScaleLength float64 `json:"scaleLength"`
@@ -47,46 +48,49 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 		return errorResponse(http.StatusUnprocessableEntity, `{"error":"a numeric scaleLength greater than zero is required"}`), nil
 	}
 
-	var fretPlacements FretPlacements
+	var fretboard Fretboard
 
 	switch q["tuningSystem"] {
 	case "equal":
-		fretPlacements = h.fretPlacementsForEqualTemperamentTuning(scaleLength, parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))
+		fretboard = h.fretPlacementsForEqualTemperamentTuning(scaleLength, parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))
 
 	case "saz":
-		fretPlacements = h.fretPlacementsForSazTuning(scaleLength)
+		fretboard = h.fretPlacementsForSazTuning(scaleLength)
 
 	case "pythagorean":
-		fretPlacements = h.fretPlacementsForPythagoreanTuning(scaleLength)
+		fretboard = h.fretPlacementsForPythagoreanTuning(scaleLength)
 
 	case "meantone":
-		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, false)
+		fretboard = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, false)
 	case "extendedMeantone":
-		fretPlacements = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, true)
+		fretboard = h.fretPlacementsForQuarterCommaMeantoneTuning(scaleLength, true)
 
 	case "":
 		fallthrough
 	case "ptolemy":
-		fretPlacements = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, parseIntegerQueryParameter(q, "octaves", defaultOctavesToCompute), validDiatonicModeOrDefault(q["diatonicMode"]))
+		fretboard = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, parseIntegerQueryParameter(q, "octaves", defaultOctavesToCompute), validDiatonicModeOrDefault(q["diatonicMode"]))
 
 	case "just5limitFromPythagorean":
-		fretPlacements = h.fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength)
+		fretboard = h.fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength)
 
 	case "just5limitFromRatios":
-		fretPlacements = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
+		fretboard = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry))
 
 	case "just7limitFromRatios":
-		fretPlacements = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength)
+		fretboard = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength)
+
+	case "just13limitFromRatios":
+		fretboard = h.fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseIntegerQueryParameter(q, "limit", defaultJustLimit))
 
 	case "bachWellTemperament":
-		fretPlacements = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
+		fretboard = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
 
 	default:
 		return errorResponse(http.StatusUnprocessableEntity, `{"error":"please provide a valid tuning system"}`), nil
 	}
 
-	fretPlacements.ScaleLength = scaleLength
-	body, _ := json.Marshal(fretPlacements)
+	fretboard.ScaleLength = scaleLength
+	body, _ := json.Marshal(fretboard)
 	return events.LambdaFunctionURLResponse{StatusCode: http.StatusOK, Headers: headers, Body: string(body)}, nil
 }
 
@@ -128,9 +132,9 @@ func isValidDiatonicMode(mode string) bool {
 	}
 }
 
-func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) FretPlacements {
+func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) Fretboard {
 	intervals := computePythagoreanIntervals()
-	return FretPlacements{
+	return Fretboard{
 		System:      "Pythagorean",
 		Description: "Fret positions based on 3-limit Pythagorean ratios.",
 		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
@@ -163,7 +167,7 @@ func computePythagoreanIntervals() []Interval {
 	return intervals
 }
 
-func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) FretPlacements {
+func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) Fretboard {
 	// Derive scale by adjusting Pythagorean scale by syntonic comma (81/80)
 	// 	m2 : 256/243 → 16/15
 	//	M2 : 9/8 → 10/9
@@ -192,7 +196,7 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 		}
 	}
 
-	return FretPlacements{
+	return Fretboard{
 		System:      "5-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
 		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
@@ -202,14 +206,16 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 // intervalFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
 type intervalFilterFunction func(ratio Interval) bool
 
-func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) FretPlacements {
-	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
-	fifthPartialMultipliers := [][]uint{{5, 1}, {1, 1}, {1, 5}}
-	return FretPlacements{
+func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) Fretboard {
+	return Fretboard{
 		System:      "5-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(createMultiplierTableOf(thirdPartialMultipliers, fifthPartialMultipliers), fiveLimitScaleFilter(symmetry))),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9)), fiveLimitScaleFilter(symmetry))),
 	}
+}
+
+func multipliers(base uint) [][]uint {
+	return [][]uint{{base, 1}, {1, 1}, {1, base}}
 }
 
 func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
@@ -260,17 +266,19 @@ func createMultiplierTableOf(multiplierListA, multiplierListB [][]uint) [][]uint
 	return multiplierTable
 }
 
-func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) FretPlacements {
-	thirdPartialMultipliers := [][]uint{{1, 9}, {1, 3}, {1, 1}, {3, 1}, {9, 1}}
-	fifthPartialMultipliers := [][]uint{{1, 5}, {1, 1}, {5, 1}}
-	seventhPartialMultipliers := [][]uint{{1, 7}, {1, 1}, {7, 1}}
-
-	sevenLimitMultipliers := createMultiplierTableOf(createMultiplierTableOf(seventhPartialMultipliers, fifthPartialMultipliers), thirdPartialMultipliers)
-
-	return FretPlacements{
+func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {
+	return Fretboard{
 		System:      "7-limit Just Intonation",
 		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(sevenLimitMultipliers, nullScaleFilter())),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9), multipliers(7)), nullScaleFilter())),
+	}
+}
+
+func (h Handler) fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, limit int) Fretboard {
+	return Fretboard{
+		System:      fmt.Sprintf("%d-limit Just Intonation", limit),
+		Description: fmt.Sprintf("Fret positions for just intonation chromatic scale based on %d-limit pure ratios.", limit),
+		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9), multipliers(7), multipliers(13)), nullScaleFilter())),
 	}
 }
 
@@ -302,7 +310,7 @@ func computeJustScale(multipliers [][]uint, filter intervalFilterFunction) []Int
 	return preferredIntervals
 }
 
-func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) FretPlacements {
+func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) Fretboard {
 	var intervalMap = map[string][]Interval{
 		"Lydian":     {greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
 		"Ionian":     {greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
@@ -323,15 +331,15 @@ func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength floa
 		}
 	}
 
-	return FretPlacements{
+	return Fretboard{
 		System:      "Ptolemy",
 		Description: fmt.Sprintf("Fret positions for Ptolemy's 5-limit intense diatonic scale in %s mode.", mode),
 		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
 	}
 }
 
-func (h Handler) fretPlacementsForSazTuning(scaleLength float64) FretPlacements {
-	return FretPlacements{
+func (h Handler) fretPlacementsForSazTuning(scaleLength float64) Fretboard {
+	return Fretboard{
 		System:      "saz",
 		Description: "Fret positions for traditional Turkish Saz tuning ratios.",
 		ScaleLength: scaleLength,
@@ -339,7 +347,7 @@ func (h Handler) fretPlacementsForSazTuning(scaleLength float64) FretPlacements 
 	}
 }
 
-func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) FretPlacements {
+func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) Fretboard {
 	fractionOfSyntonicCommaToTemperFifthsBy := 0.25
 	temperedFifth := perfectFifth.toFloat() * math.Pow(syntonicComma.toFloat(), -fractionOfSyntonicCommaToTemperFifthsBy)
 
@@ -390,7 +398,7 @@ func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64
 		description = fmt.Sprintf("Fret positions for meantone computed by narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used given a tonic of D.", fractionOfSyntonicCommaToTemperFifthsBy)
 	}
 
-	return FretPlacements{
+	return Fretboard{
 		System:      "meantone",
 		Description: description,
 		ScaleLength: scaleLength,
@@ -413,8 +421,8 @@ func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []Inte
 	return frets
 }
 
-func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) FretPlacements {
-	fretPlacements := FretPlacements{
+func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) Fretboard {
+	fretPlacements := Fretboard{
 		System:      fmt.Sprintf("%d-TET", divisionsOfOctave),
 		Description: fmt.Sprintf("Fret positions for %d-tone equal temperament.", divisionsOfOctave),
 		ScaleLength: scaleLength,
@@ -447,7 +455,7 @@ func (h Handler) octaveReduceFloat(ratio float64) float64 {
 // Bach's Extraordinary Temperament: Our Rosetta Stone - Bradley Lehman
 // Early Music Volume 33, Number 1, February 2005, pp. 3-23 (Article)
 // Reference: https://academic.oup.com/em/article-abstract/33/1/3/535436?redirectedFrom=fulltext
-func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) FretPlacements {
+func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) Fretboard {
 	// Narrowing of the fifths as outlined by Lehman
 	temperingFractions := []float64{
 		0.0,         // Pure fifth
@@ -508,10 +516,17 @@ func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64
 	})
 
 	description := "Fret positions derived from Lehman's decoding of Bach's Well-Tempered tuning, using sixth-comma, twelfth-comma, and pure fifths."
-	return FretPlacements{
+	return Fretboard{
 		System:      "Bach's Well-Tempered Tuning",
 		Description: description,
 		ScaleLength: scaleLength,
 		Frets:       frets,
 	}
+}
+
+func buildMultiplierTablesFrom(multipliers ...[][]uint) [][]uint {
+	if len(multipliers) == 1 {
+		return multipliers[0]
+	}
+	return createMultiplierTableOf(multipliers[0], buildMultiplierTablesFrom(multipliers[1:]...))
 }
