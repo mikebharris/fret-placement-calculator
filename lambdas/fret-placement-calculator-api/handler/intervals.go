@@ -191,7 +191,7 @@ var intervalNames = []Interval{
 }
 
 func (i Interval) sortWith(j Interval) int {
-	return cmp.Compare(float64(i.Numerator)/float64(i.Denominator), float64(j.Numerator)/float64(j.Denominator))
+	return cmp.Compare(i.Numerator*j.Denominator, j.Numerator*i.Denominator)
 }
 
 func (i Interval) String() string {
