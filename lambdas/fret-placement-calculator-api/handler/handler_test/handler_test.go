@@ -683,8 +683,8 @@ func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T
 	assert.Equal(t, "19-TET", fretboard.System)
 	assert.Equal(t, "Fret positions for 19-tone equal temperament.", fretboard.Description)
 	assert.Equal(t, 19, len(fretboard.Frets))
-	assert.Equal(t, handler.Fret{Label: "Fret 1", Position: 19.345}, fretboard.Frets[0])
-	assert.Equal(t, handler.Fret{Label: "Fret 19", Position: 270.0}, fretboard.Frets[18])
+	assert.Equal(t, handler.Fret{Label: "Fret 1", Position: 19.345, Comment: "63.00 cents"}, fretboard.Frets[0])
+	assert.Equal(t, handler.Fret{Label: "Fret 19", Position: 270.0, Comment: "1200.00 cents"}, fretboard.Frets[18])
 }
 
 func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {

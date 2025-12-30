@@ -429,11 +429,16 @@ func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, di
 		Frets:       nil,
 	}
 
-	for fretNumber := 1; fretNumber <= divisionsOfOctave; fretNumber++ {
-		distanceFromNut, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", scaleLength-(scaleLength/math.Exp2(float64(fretNumber)/float64(divisionsOfOctave)))), 64)
+	edo := EquallyDividedOctave{
+		NumberOfDivisions: uint(divisionsOfOctave),
+	}.divisions()
+
+	for f, d := range edo {
+		distanceFromNut, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", scaleLength-(scaleLength/d.Ratio)), 64)
 		fretPlacements.Frets = append(fretPlacements.Frets, Fret{
-			Label:    fmt.Sprintf("Fret %d", fretNumber),
+			Label:    fmt.Sprintf("Fret %d", f+1),
 			Position: distanceFromNut,
+			Comment:  fmt.Sprintf("%.2f cents", d.Cents),
 		})
 	}
 	return fretPlacements
