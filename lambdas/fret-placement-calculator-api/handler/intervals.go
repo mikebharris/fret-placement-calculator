@@ -87,11 +87,11 @@ func (i Interval) simplify() Interval {
 }
 
 func (i Interval) octaveReduce() Interval {
-	for i.Numerator/i.Denominator >= 2.0 || i.Numerator/i.Denominator < 1.0 {
-		if i.Numerator/i.Denominator < 1.0 {
+	for i.toFloat() >= 2.0 || i.toFloat() < 1.0 {
+		if i.toFloat() < 1.0 {
 			i.Numerator *= 2
 		}
-		if i.Numerator/i.Denominator >= 2.0 {
+		if i.toFloat() >= 2.0 {
 			i.Denominator *= 2
 		}
 	}
