@@ -158,6 +158,8 @@ var intervalNames = []Interval{
 	{135, 128, "Greater Chromatic Semitone"},
 	{27, 25, "Acute Minor Second"},
 	{16, 15, "Minor Second"},
+	{13, 12, "Tridecimal Minor Second (Avicenna)"},
+	{12, 11, "Undecimal Minor Second"},
 	{15, 14, "Septimal Minor Second"},
 	{10, 9, "Just (Lesser) Major Second"},
 	{9, 8, "Pythagorean (Greater) Major Second"},
@@ -183,6 +185,7 @@ var intervalNames = []Interval{
 	{9, 5, "Just (Greater) Minor Seventh"},
 	{7, 4, "Septimal (Harmonic) Minor Seventh"},
 	{15, 8, "Just Major Seventh"},
+	{13, 7, "Tridecimal Major Seventh"},
 	{243, 128, "Pythagorean Major Seventh"},
 	{2, 1, "Perfect Octave"},
 }
