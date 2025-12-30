@@ -129,7 +129,7 @@ func (i Interval) toFloat() float64 {
 }
 
 func (i Interval) toPowerOf(p int) Interval {
-	return Interval{uint(math.Pow(float64(i.Numerator), math.Abs(float64(p)))), uint(math.Pow(float64(i.Denominator), math.Abs(float64(p)))), ""}
+	return Interval{Numerator: uint(math.Pow(float64(i.Numerator), math.Abs(float64(p)))), Denominator: uint(math.Pow(float64(i.Denominator), math.Abs(float64(p))))}.simplify()
 }
 
 func (i Interval) reciprocal() Interval {
@@ -214,7 +214,7 @@ func intervalsFromIntegers(integers [][]uint) []Interval {
 }
 
 func fromIntArray(i []uint) Interval {
-	return Interval{Numerator: i[0], Denominator: i[1]}
+	return Interval{Numerator: i[0], Denominator: i[1]}.simplify()
 }
 
 func sortIntervals(intervals []Interval) {
