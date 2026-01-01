@@ -112,7 +112,7 @@ func (i Interval) subtract(other Interval) Interval {
 	} else if i.greaterThan(other) {
 		return Interval{Numerator: i.Numerator * other.Denominator, Denominator: i.Denominator * other.Numerator}.simplify()
 	}
-	return Interval{Numerator: 0, Denominator: 0}
+	return Interval{Numerator: 1, Denominator: 1}
 }
 
 func (i Interval) name() string {
