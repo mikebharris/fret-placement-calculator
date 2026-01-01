@@ -26,20 +26,6 @@ var headers = map[string]string{
 type Handler struct {
 }
 
-type Fret struct {
-	Label    string  `json:"label"`
-	Position float64 `json:"position"`
-	Comment  string  `json:"comment,omitempty"`
-	Interval string  `json:"interval,omitempty"`
-}
-
-type Fretboard struct {
-	System      string  `json:"system"`
-	Description string  `json:"description,omitempty"`
-	ScaleLength float64 `json:"scaleLength"`
-	Frets       []Fret  `json:"frets"`
-}
-
 func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 	q := request.QueryStringParameters
 
@@ -132,79 +118,58 @@ func isValidDiatonicMode(mode string) bool {
 	}
 }
 
-func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) Fretboard {
-	intervals := computePythagoreanIntervals()
-	return Fretboard{
-		System:      "Pythagorean",
-		Description: "Fret positions based on 3-limit Pythagorean ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
-	}
-}
-
-func computePythagoreanIntervals() []Interval {
-	// divide by 3:2 = 4/9 * 2/3 = 16/27 = 2^3 : 3^3 = 16/27
-	// divide by 3:2 = 2/3 * 2/3 = 4/9 - octave reduce to 16:9
-	// divide by 3:2 = 2:3 - octave reduce to 4:3
-	// fundamental = 1,1
-	// multiply by 3:2 = 3,2
-	// multiply by 3:2 = 9,4 - octave reduce to 9:8
-	// multiply by 3:2 = 27:8 = 3^3:2^3 - octave reduce to 27:16
-	// multiply by 3:2 = 81:16 - octave reduce to 81:64 - 3^4:2^4 = 81:16
-
+func computePythagoreanNotes() []Note {
 	var thirdPartialsFromTonicToCompute = 6
-	var intervals []Interval
-
+	var notes []Note
 	for i := -thirdPartialsFromTonicToCompute; i <= thirdPartialsFromTonicToCompute; i++ {
 		if i < 0 {
-			intervals = append(intervals, perfectFifth.toPowerOf(i).reciprocal().octaveReduce())
+			var note = Note{DistanceFromTonic: perfectFifth.toPowerOf(i).reciprocal().octaveReduce()}
+			notes = append(notes, note)
 		} else if i > 0 {
-			intervals = append(intervals, perfectFifth.toPowerOf(i).octaveReduce())
+			var note = Note{DistanceFromTonic: perfectFifth.toPowerOf(i).octaveReduce()}
+			notes = append(notes, note)
 		}
 	}
 
-	intervals = append(intervals, octave)
-	sortIntervals(intervals)
-	return intervals
+	notes = append(notes, Note{DistanceFromTonic: octave})
+	slices.SortFunc(notes, func(i, j Note) int {
+		return i.sortWith(j)
+	})
+	return notes
+}
+
+func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) Fretboard {
+	return newFretboardFromScale(scaleLength, Scale{System: "Pythagorean", Description: "3-limit Pythagorean ratios.", Algorithm: computePythagoreanNotes})
 }
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) Fretboard {
 	// Derive scale by adjusting Pythagorean scale by syntonic comma (81/80)
-	// 	m2 : 256/243 → 16/15
-	//	M2 : 9/8 → 10/9
-	//	m3 : 32/27 → 6/5
-	//	M3 : 81/64 → 5/4
-	//	m6 : 128/81 → 8/5
-	//	M6 : 27/16 → 5/3
-	//	m7 : 16/9 → 9/5
-	//	M7 : 243/128 → 15/8
+	return newFretboardFromScale(scaleLength, Scale{
+		System:      "5-limit Just Intonation",
+		Description: "5-limit just intonation pure ratios chromatic scale derived from applying syntonic comma to Pythagorean ratios.",
+		Algorithm:   computeFiveLimitNotesFromPythagorean,
+	})
+}
 
-	var intervals []Interval
-
-	for _, interval := range computePythagoreanIntervals() {
-		if interval.isPerfect() {
-			intervals = append(intervals, interval)
+func computeFiveLimitNotesFromPythagorean() []Note {
+	var notes []Note
+	for _, note := range computePythagoreanNotes() {
+		if note.DistanceFromTonic.isPerfect() {
+			notes = append(notes, note)
 			continue
 		}
 
-		graveRatio := interval.add(acuteUnison)
-		acuteRatio := interval.add(graveUnison)
+		graveRatio := note.DistanceFromTonic.add(acuteUnison)
+		acuteRatio := note.DistanceFromTonic.add(graveUnison)
 
 		if graveRatio.Denominator < acuteRatio.Denominator {
-			intervals = append(intervals, graveRatio)
+			notes = append(notes, Note{DistanceFromTonic: graveRatio})
 		} else {
-			intervals = append(intervals, acuteRatio)
+			notes = append(notes, Note{DistanceFromTonic: acuteRatio})
 		}
 	}
-
-	return Fretboard{
-		System:      "5-limit Just Intonation",
-		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.",
-		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
-	}
+	return notes
 }
-
-// intervalFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
-type intervalFilterFunction func(ratio Interval) bool
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry string) Fretboard {
 	return Fretboard{
@@ -212,10 +177,6 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scal
 		Description: "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from third- and fifth-partial ratios.",
 		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9)), fiveLimitScaleFilter(symmetry))),
 	}
-}
-
-func multipliers(base uint) [][]uint {
-	return [][]uint{{base, 1}, {1, 1}, {1, base}}
 }
 
 func fiveLimitScaleFilter(symmetry string) func(interval Interval) bool {
@@ -237,33 +198,6 @@ func nullScaleFilter() func(interval Interval) bool {
 	return func(interval Interval) bool {
 		return false
 	}
-}
-
-func justIntervalsFromMultipliers(multiplierList [][]uint, filter intervalFilterFunction) []Interval {
-	var intervals []Interval
-	for _, multiplier := range multiplierList {
-		interval := Interval{Numerator: multiplier[0], Denominator: multiplier[1]}.octaveReduce()
-		if interval.isUnison() || interval.isDiminishedFifth() {
-			continue
-		}
-		if filter(interval) {
-			continue
-		}
-		intervals = append(intervals, interval)
-	}
-	intervals = append(intervals, octave)
-	sortIntervals(intervals)
-	return intervals
-}
-
-func createMultiplierTableOf(multiplierListA, multiplierListB [][]uint) [][]uint {
-	var multiplierTable [][]uint
-	for _, multiplierA := range multiplierListA {
-		for _, multiplierB := range multiplierListB {
-			multiplierTable = append(multiplierTable, []uint{multiplierA[0] * multiplierB[0], multiplierA[1] * multiplierB[1]})
-		}
-	}
-	return multiplierTable
 }
 
 func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {

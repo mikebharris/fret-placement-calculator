@@ -222,3 +222,37 @@ func sortIntervals(intervals []Interval) {
 		return i.sortWith(j)
 	})
 }
+
+// intervalFilterFunction defines a function type for excluding certain ratios based on scale symmetry.
+type intervalFilterFunction func(ratio Interval) bool
+
+func multipliers(base uint) [][]uint {
+	return [][]uint{{base, 1}, {1, 1}, {1, base}}
+}
+
+func justIntervalsFromMultipliers(multiplierList [][]uint, filter intervalFilterFunction) []Interval {
+	var intervals []Interval
+	for _, multiplier := range multiplierList {
+		interval := Interval{Numerator: multiplier[0], Denominator: multiplier[1]}.octaveReduce()
+		if interval.isUnison() || interval.isDiminishedFifth() {
+			continue
+		}
+		if filter(interval) {
+			continue
+		}
+		intervals = append(intervals, interval)
+	}
+	intervals = append(intervals, octave)
+	sortIntervals(intervals)
+	return intervals
+}
+
+func createMultiplierTableOf(multiplierListA, multiplierListB [][]uint) [][]uint {
+	var multiplierTable [][]uint
+	for _, multiplierA := range multiplierListA {
+		for _, multiplierB := range multiplierListB {
+			multiplierTable = append(multiplierTable, []uint{multiplierA[0] * multiplierB[0], multiplierA[1] * multiplierB[1]})
+		}
+	}
+	return multiplierTable
+}

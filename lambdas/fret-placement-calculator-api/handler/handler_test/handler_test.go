@@ -32,7 +32,7 @@ func Test_shouldReturnFretPlacementsForAChromaticFiveLimitJustIntonationScaleBui
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretboard.System)
-	assert.Equal(t, "Fret positions for chromatic scale based on 5-limit just intonation pure ratios derived from applying syntonic comma to Pythagorean ratios.", fretboard.Description)
+	assert.Equal(t, "Fret positions based on 5-limit just intonation pure ratios chromatic scale derived from applying syntonic comma to Pythagorean ratios.", fretboard.Description)
 	assert.Equal(t, 13, len(fretboard.Frets))
 
 	assert.Equal(t, "16:15", fretboard.Frets[0].Label)
