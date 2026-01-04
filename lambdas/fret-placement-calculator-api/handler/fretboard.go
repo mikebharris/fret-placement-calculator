@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"math"
+	"music"
 )
 
 type Fret struct {
@@ -19,25 +20,25 @@ type Fretboard struct {
 	Frets       []Fret  `json:"frets"`
 }
 
-func newFretboardFromScale(length float64, s Scale) Fretboard {
+func newFretboardFromScale(length float64, s music.Scale) Fretboard {
 	fretboard := Fretboard{
-		System:      s.System,
-		Description: fmt.Sprintf("Fret positions based on %s", s.Description),
+		System:      s.System(),
+		Description: fmt.Sprintf("Fret positions based on %s", s.Description()),
 		ScaleLength: length,
 	}
-	fretboard.makeFrets(s.Algorithm())
+	fretboard.makeFrets(s.Intervals())
 	return fretboard
 }
 
-func (f *Fretboard) makeFrets(notes []Note) {
-	var previousInterval = unison
-	for _, note := range notes {
+func (f *Fretboard) makeFrets(intervals []music.Interval) {
+	var previousInterval = music.Unison
+	for _, interval := range intervals {
 		f.Frets = append(f.Frets, Fret{
-			Label:    note.DistanceFromTonic.String(),
-			Position: math.Round((f.ScaleLength-(f.ScaleLength/float64(note.DistanceFromTonic.Numerator))*float64(note.DistanceFromTonic.Denominator))*100) / 100,
-			Comment:  note.DistanceFromTonic.name(),
-			Interval: note.DistanceFromTonic.subtract(previousInterval).String(),
+			Label:    interval.String(),
+			Position: math.Round((f.ScaleLength-(f.ScaleLength/float64(interval.Numerator))*float64(interval.Denominator))*100) / 100,
+			Comment:  interval.Name(),
+			Interval: interval.Subtract(previousInterval).String(),
 		})
-		previousInterval = note.DistanceFromTonic
+		previousInterval = interval
 	}
 }

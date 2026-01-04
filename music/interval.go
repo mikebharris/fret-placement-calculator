@@ -1,4 +1,4 @@
-package handler
+package music
 
 import (
 	"cmp"
@@ -29,27 +29,30 @@ func (i Interval) isDiminishedFifth() bool {
 	return i.Numerator == 64 && i.Denominator == 45
 }
 
-func (i Interval) isLesserMajorSecond() bool {
+func (i Interval) IsLesserMajorSecond() bool {
 	return i.Numerator == 10 && i.Denominator == 9
 }
 
-func (i Interval) isGreaterMajorSecond() bool {
+func (i Interval) IsGreaterMajorSecond() bool {
 	return i.Numerator == 9 && i.Denominator == 8
 }
 
-func (i Interval) isLesserMinorSeventh() bool {
+func (i Interval) IsLesserMinorSeventh() bool {
 	return i.Numerator == 16 && i.Denominator == 9
 }
 
-func (i Interval) isGreaterMinorSeventh() bool {
+func (i Interval) IsGreaterMinorSeventh() bool {
 	return i.Numerator == 9 && i.Denominator == 5
 }
 
 func (i Interval) add(other Interval) Interval {
-	return Interval{
+	interval := Interval{
 		Numerator:   i.Numerator * other.Numerator,
 		Denominator: i.Denominator * other.Denominator,
 	}.simplify()
+	interval.Name = interval.NameMatch()
+
+	return interval
 }
 
 func (i Interval) isPerfectFourth() bool {
@@ -87,14 +90,15 @@ func (i Interval) simplify() Interval {
 }
 
 func (i Interval) octaveReduce() Interval {
-	for i.toFloat() >= 2.0 || i.toFloat() < 1.0 {
-		if i.toFloat() < 1.0 {
+	for i.ToFloat() >= 2.0 || i.ToFloat() < 1.0 {
+		if i.ToFloat() < 1.0 {
 			i.Numerator *= 2
 		}
-		if i.toFloat() >= 2.0 {
+		if i.ToFloat() >= 2.0 {
 			i.Denominator *= 2
 		}
 	}
+	i.Name = i.NameMatch()
 	return i
 }
 
@@ -106,7 +110,7 @@ func (i Interval) greaterThan(other Interval) bool {
 	return !i.lessThan(other) && !i.isEqualTo(other)
 }
 
-func (i Interval) subtract(other Interval) Interval {
+func (i Interval) Subtract(other Interval) Interval {
 	if i.lessThan(other) {
 		return Interval{Numerator: i.Denominator * other.Numerator, Denominator: i.Numerator * other.Denominator}.simplify()
 	} else if i.greaterThan(other) {
@@ -115,7 +119,7 @@ func (i Interval) subtract(other Interval) Interval {
 	return Interval{Numerator: 1, Denominator: 1}
 }
 
-func (i Interval) name() string {
+func (i Interval) NameMatch() string {
 	for _, n := range intervalNames {
 		if n.Numerator == i.Numerator && n.Denominator == i.Denominator {
 			return n.Name
@@ -124,33 +128,40 @@ func (i Interval) name() string {
 	return ""
 }
 
-func (i Interval) toFloat() float64 {
+func (i Interval) ToFloat() float64 {
 	return float64(i.Numerator) / float64(i.Denominator)
 }
 
-func (i Interval) toPowerOf(p int) Interval {
+func (i Interval) ToPowerOf(p int) Interval {
 	return Interval{Numerator: uint(math.Pow(float64(i.Numerator), math.Abs(float64(p)))), Denominator: uint(math.Pow(float64(i.Denominator), math.Abs(float64(p))))}.simplify()
 }
 
 func (i Interval) reciprocal() Interval {
-	return Interval{Denominator: i.Numerator, Numerator: i.Denominator}
+	interval := Interval{Denominator: i.Numerator, Numerator: i.Denominator}
+	interval.Name = interval.NameMatch()
+	return interval
 }
 
-var unison = Interval{1, 1, "Unison"}
+func perfectFourth() Interval {
+	return Interval{4, 3, "Perfect Fourth"}
+}
+
+var Unison = Interval{1, 1, "Unison"}
 var acuteUnison = Interval{Numerator: 81, Denominator: 80}
-var syntonicComma = Interval{Numerator: 81, Denominator: 80}
+var SyntonicComma = Interval{Numerator: 81, Denominator: 80}
 var dieses = Interval{Numerator: 128, Denominator: 125}
 var justChromaticSemitone = Interval{Numerator: 25, Denominator: 24}
 var graveUnison = Interval{Numerator: 80, Denominator: 81}
 var lesserMajorSecond = Interval{10, 9, "Lesser Major Second"}
 var greaterMajorSecond = Interval{9, 8, "Greater Major Second"}
 var diatonicSemitone = Interval{16, 15, "Diatonic Semitone"}
-var perfectFifth = Interval{3, 2, "Perfect Fifth"}
-var octave = Interval{2, 1, "Octave"}
+var PerfectFifth = Interval{3, 2, "Perfect Fifth"}
+var octave = Interval{2, 1, "Perfect Octave"}
 
 var intervalNames = []Interval{
 	{1, 1, "Perfect Unison"},
 	{225, 224, "Septimal Kleisma"},
+	{80, 81, "Syntonic Comma"},
 	{81, 80, "Grave Unison"},
 	{128, 125, "Dieses (Diminished Second)"},
 	{25, 24, "Just (Lesser) Chromatic Semitone"},
@@ -166,7 +177,7 @@ var intervalNames = []Interval{
 	{8, 7, "Septimal Major Second"},
 	{6, 5, "Minor Third"},
 	{5, 4, "Major Third"},
-	{32, 27, "Diminished Fourth"},
+	{32, 27, "Pythagorean Minor Third"},
 	{81, 64, "Pythagorean Major Third"},
 	{4, 3, "Perfect Fourth"},
 	{45, 32, "Augmented Fourth"},
@@ -201,9 +212,6 @@ func (i Interval) String() string {
 func (i Interval) toCents() float64 {
 	return math.Log10(float64(i.Numerator)/float64(i.Denominator)) / math.Log10(2) * 1200
 }
-
-// as per https://en.wikipedia.org/wiki/Ba%C4%9Flama and the cura that I have
-var sazIntervals = intervalsFromIntegers([][]uint{{18, 17}, {12, 11}, {9, 8}, {81, 68}, {27, 22}, {81, 64}, {4, 3}, {24, 17}, {16, 11}, {3, 2}, {27, 17}, {18, 11}, {27, 16}, {16, 9}, {32, 17}, {64, 33}, {2, 1}})
 
 func intervalsFromIntegers(integers [][]uint) []Interval {
 	var intervals []Interval
