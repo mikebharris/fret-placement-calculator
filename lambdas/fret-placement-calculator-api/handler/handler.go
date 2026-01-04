@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"main/music"
 	"math"
+	music2 "music"
 	"net/http"
 	"slices"
 	"strconv"
@@ -125,12 +126,6 @@ func multipliers(base uint) [][]uint {
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry music.Symmetry) Fretboard {
 	return newFretboardFromScale(scaleLength, music.New5LimitJustIntonationChromaticScale(symmetry))
-}
-
-func nullScaleFilter() func(interval music.Interval) bool {
-	return func(interval music.Interval) bool {
-		return false
-	}
 }
 
 //func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {
@@ -274,8 +269,8 @@ func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []musi
 	for _, intervalOfNote := range intervals {
 		frets = append(frets, Fret{
 			Label:    intervalOfNote.String(),
-			Position: math.Round((scaleLength-(scaleLength/float64(intervalOfNote.Numerator))*float64(intervalOfNote.Denominator))*100) / 100,
-			Comment:  intervalOfNote.NameMatch(),
+			Position: math.Round((scaleLength-(scaleLength/float64(intervalOfNote.numerator))*float64(intervalOfNote.Denominator))*100) / 100,
+			Comment:  intervalOfNote.Name(),
 			Interval: intervalOfNote.Subtract(previousInterval).String(),
 		})
 		previousInterval = intervalOfNote
@@ -291,7 +286,7 @@ func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, di
 		Frets:       nil,
 	}
 
-	edo := EquallyDividedOctave{
+	edo := music2.EquallyDividedOctave{
 		NumberOfDivisions: uint(divisionsOfOctave),
 	}.divisions()
 
