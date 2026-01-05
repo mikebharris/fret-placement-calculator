@@ -8,7 +8,7 @@ import (
 type TemperedInterval float64
 
 func (i TemperedInterval) toCents() float64 {
-	return math.Log10(i.toFloat()) / math.Log10(2) * 1200
+	return math.Round(math.Log10(i.toFloat())/math.Log10(2)*120000) / 100
 }
 
 func (i TemperedInterval) toFloat() float64 {
