@@ -328,7 +328,7 @@ func Test_ShouldReturnIntenseDiatonicScaleInPhrygianModeWithScaleDegrees(t *test
 	assert.Equal(t, JustInterval{numerator: 4, denominator: 3}, intervals[3])
 	assert.Equal(t, JustInterval{numerator: 3, denominator: 2}, intervals[4])
 	assert.Equal(t, JustInterval{numerator: 8, denominator: 5}, intervals[5])
-	assert.Equal(t, JustInterval{numerator: 16, denominator: 9}, intervals[6])
+	assert.Equal(t, JustInterval{numerator: 9, denominator: 5}, intervals[6])
 	assert.Equal(t, JustInterval{numerator: 2, denominator: 1}, intervals[7])
 }
 

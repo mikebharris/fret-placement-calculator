@@ -358,7 +358,14 @@ func TestInterval_isOctave(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Octave test for octave interval",
+			fields: fields{
+				numerator:   2,
+				denominator: 1,
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -698,9 +705,9 @@ func TestInterval_simplify(t *testing.T) {
 		want   JustInterval
 	}{
 		{
-			name: "Simplify a major tenth to a major third",
+			name: "Simplify 10:8 to 5:4",
 			fields: fields{
-				numerator:   15,
+				numerator:   10,
 				denominator: 8,
 			},
 			want: JustInterval{
@@ -736,7 +743,20 @@ func TestInterval_sortWith(t *testing.T) {
 		args   args
 		want   int
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Sorting a lesser major second with a greater major second",
+			fields: fields{
+				numerator:   10,
+				denominator: 9,
+			},
+			args: args{
+				j: JustInterval{
+					numerator:   9,
+					denominator: 8,
+				},
+			},
+			want: -1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -806,7 +826,14 @@ func TestInterval_toCents(t *testing.T) {
 		fields fields
 		want   float64
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Cents value of a perfect fifth",
+			fields: fields{
+				numerator:   3,
+				denominator: 2,
+			},
+			want: 701.9550008653874,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -831,7 +858,14 @@ func TestInterval_toFloat(t *testing.T) {
 		fields fields
 		want   float64
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Float value of a perfect fifth",
+			fields: fields{
+				numerator:   3,
+				denominator: 2,
+			},
+			want: 1.5,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -860,7 +894,20 @@ func TestInterval_toPowerOf(t *testing.T) {
 		args   args
 		want   JustInterval
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Raising a perfect fifth to the power of 2",
+			fields: fields{
+				numerator:   3,
+				denominator: 2,
+			},
+			args: args{
+				p: 2,
+			},
+			want: JustInterval{
+				numerator:   9,
+				denominator: 4,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -885,7 +932,18 @@ func Test_createMultiplierTableOf(t *testing.T) {
 		args args
 		want [][]uint
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Create multiplier table from two lists",
+			args: args{
+				multiplierListA: [][]uint{{5, 1}, {1, 1}, {1, 5}},
+				multiplierListB: [][]uint{{3, 1}, {1, 1}, {1, 3}},
+			},
+			want: [][]uint{
+				{15, 1}, {5, 1}, {5, 3},
+				{3, 1}, {1, 1}, {1, 3},
+				{3, 5}, {1, 5}, {1, 15},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -905,7 +963,16 @@ func Test_fromIntArray(t *testing.T) {
 		args args
 		want JustInterval
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Create interval from integer array representing a perfect fifth",
+			args: args{
+				i: []uint{3, 2},
+			},
+			want: JustInterval{
+				numerator:   3,
+				denominator: 2,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -925,7 +992,17 @@ func Test_intervalsFromIntegers(t *testing.T) {
 		args args
 		want []JustInterval
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Create intervals from integer pairs",
+			args: args{
+				integers: [][]uint{{3, 2}, {5, 4}, {4, 3}},
+			},
+			want: []JustInterval{
+				{numerator: 3, denominator: 2},
+				{numerator: 5, denominator: 4},
+				{numerator: 4, denominator: 3},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -946,7 +1023,19 @@ func Test_justIntervalsFromMultipliers(t *testing.T) {
 		args args
 		want []JustInterval
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Create just intervals from multipliers without filtering",
+			args: args{
+				multiplierList: [][]uint{{3, 1}, {1, 1}, {1, 3}},
+				filter:         func(ratio JustInterval) bool { return false },
+			},
+			want: []JustInterval{
+				{numerator: 3, denominator: 1},
+				{numerator: 1, denominator: 1},
+				{numerator: 1, denominator: 3},
+				octave,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -966,7 +1055,13 @@ func Test_multipliers(t *testing.T) {
 		args args
 		want [][]uint
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Generate multipliers for base 5",
+			args: args{
+				base: 5,
+			},
+			want: [][]uint{{5, 1}, {1, 1}, {1, 5}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -987,7 +1082,17 @@ func Test_newInterval(t *testing.T) {
 		args args
 		want JustInterval
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Create new interval representing a perfect fifth",
+			args: args{
+				numerator:   3,
+				denominator: 2,
+			},
+			want: JustInterval{
+				numerator:   3,
+				denominator: 2,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1006,7 +1111,16 @@ func Test_sortIntervals(t *testing.T) {
 		name string
 		args args
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Sort a list of just intervals",
+			args: args{
+				intervals: []JustInterval{
+					{numerator: 10, denominator: 9},
+					{numerator: 3, denominator: 2},
+					{numerator: 5, denominator: 4},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
