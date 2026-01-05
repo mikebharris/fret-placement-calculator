@@ -39,25 +39,22 @@ func Test_ShouldReturnScaleForQuarterCommaMeantone(t *testing.T) {
 	intervals := scale.Intervals()
 	assert.Equal(t, "Quarter-Comma Meantone", scale.System())
 	assert.Equal(t, "Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).", scale.Description())
-	assert.Equal(t, 13, len(intervals))
+	assert.Equal(t, 14, len(intervals))
 
-	//greaterSemitone := 1.069984
-	//lesserSemitone := 1.044907
-	//dieses := 1.024
-
-	assert.Equal(t, TemperedInterval(1.0), intervals[0])
-	assert.Equal(t, TemperedInterval(1.044), intervals[1])
+	assert.Equal(t, TemperedInterval(1.000), intervals[0])
+	assert.Equal(t, TemperedInterval(1.070), intervals[1])
 	assert.Equal(t, TemperedInterval(1.118), intervals[2])
-	assert.Equal(t, TemperedInterval(1.189), intervals[3])
-	assert.Equal(t, TemperedInterval(1.26), intervals[4])
-	assert.Equal(t, TemperedInterval(1.334), intervals[5])
-	assert.Equal(t, TemperedInterval(1.414), intervals[6])
-	assert.Equal(t, TemperedInterval(1.5), intervals[7])
-	assert.Equal(t, TemperedInterval(1.587), intervals[8])
-	assert.Equal(t, TemperedInterval(1.682), intervals[9])
-	assert.Equal(t, TemperedInterval(1.782), intervals[10])
-	assert.Equal(t, TemperedInterval(1.888), intervals[11])
-	assert.Equal(t, TemperedInterval(2.0), intervals[12])
+	assert.Equal(t, TemperedInterval(1.196), intervals[3])
+	assert.Equal(t, TemperedInterval(1.250), intervals[4])
+	assert.Equal(t, TemperedInterval(1.337), intervals[5])
+	assert.Equal(t, TemperedInterval(1.398), intervals[6])
+	assert.Equal(t, TemperedInterval(1.431), intervals[7])
+	assert.Equal(t, TemperedInterval(1.495), intervals[8])
+	assert.Equal(t, TemperedInterval(1.600), intervals[9])
+	assert.Equal(t, TemperedInterval(1.672), intervals[10])
+	assert.Equal(t, TemperedInterval(1.789), intervals[11])
+	assert.Equal(t, TemperedInterval(1.869), intervals[12])
+	assert.Equal(t, TemperedInterval(2.000), intervals[13])
 }
 
 func Test_ShouldReturnScaleForExtendedQuarterCommaMeantone(t *testing.T) {
@@ -70,22 +67,26 @@ func Test_ShouldReturnScaleForExtendedQuarterCommaMeantone(t *testing.T) {
 	assert.Equal(t, "Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).", scale.Description())
 	assert.Equal(t, 20, len(intervals))
 
-	//lesserSemitone := 1.044907
-	//dieses := 1.024
-
 	assert.Equal(t, TemperedInterval(1.0), intervals[0])
-	assert.Equal(t, TemperedInterval(1.044), intervals[1])
-	assert.Equal(t, TemperedInterval(1.118), intervals[2])
-	assert.Equal(t, TemperedInterval(1.189), intervals[3])
-	assert.Equal(t, TemperedInterval(1.26), intervals[4])
-	assert.Equal(t, TemperedInterval(1.334), intervals[5])
-	assert.Equal(t, TemperedInterval(1.414), intervals[6])
-	assert.Equal(t, TemperedInterval(1.5), intervals[7])
-	assert.Equal(t, TemperedInterval(1.587), intervals[8])
-	assert.Equal(t, TemperedInterval(1.682), intervals[9])
-	assert.Equal(t, TemperedInterval(1.782), intervals[10])
-	assert.Equal(t, TemperedInterval(1.888), intervals[11])
-	assert.Equal(t, TemperedInterval(2.0), intervals[12])
+	assert.Equal(t, TemperedInterval(1.045), intervals[1])
+	assert.Equal(t, TemperedInterval(1.070), intervals[2])
+	assert.Equal(t, TemperedInterval(1.118), intervals[3])
+	assert.Equal(t, TemperedInterval(1.168), intervals[4])
+	assert.Equal(t, TemperedInterval(1.196), intervals[5])
+	assert.Equal(t, TemperedInterval(1.250), intervals[6])
+	assert.Equal(t, TemperedInterval(1.280), intervals[7])
+	assert.Equal(t, TemperedInterval(1.337), intervals[8])
+	assert.Equal(t, TemperedInterval(1.398), intervals[9])
+	assert.Equal(t, TemperedInterval(1.431), intervals[10])
+	assert.Equal(t, TemperedInterval(1.495), intervals[11])
+	assert.Equal(t, TemperedInterval(1.562), intervals[12])
+	assert.Equal(t, TemperedInterval(1.600), intervals[13])
+	assert.Equal(t, TemperedInterval(1.672), intervals[14])
+	assert.Equal(t, TemperedInterval(1.712), intervals[15])
+	assert.Equal(t, TemperedInterval(1.789), intervals[16])
+	assert.Equal(t, TemperedInterval(1.869), intervals[17])
+	assert.Equal(t, TemperedInterval(1.914), intervals[18])
+	assert.Equal(t, TemperedInterval(2.000), intervals[19])
 }
 
 func Test_ShouldReturnScaleFor12ToneEqualTemperament(t *testing.T) {

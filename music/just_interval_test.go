@@ -503,7 +503,7 @@ func TestInterval_isUnison(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1030,10 +1030,22 @@ func Test_justIntervalsFromMultipliers(t *testing.T) {
 				filter:         func(ratio JustInterval) bool { return false },
 			},
 			want: []JustInterval{
-				{numerator: 3, denominator: 1},
 				{numerator: 1, denominator: 1},
-				{numerator: 1, denominator: 3},
-				octave,
+				{numerator: 4, denominator: 3},
+				{numerator: 3, denominator: 2},
+				{numerator: 2, denominator: 1},
+			},
+		},
+		{
+			name: "Filter out intervals from multipliers",
+			args: args{
+				multiplierList: [][]uint{{3, 1}, {1, 1}, {1, 3}},
+				filter:         func(ratio JustInterval) bool { return ratio == PerfectFifth },
+			},
+			want: []JustInterval{
+				{numerator: 1, denominator: 1},
+				{numerator: 4, denominator: 3},
+				{numerator: 2, denominator: 1},
 			},
 		},
 	}

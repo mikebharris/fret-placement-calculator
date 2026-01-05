@@ -68,7 +68,7 @@ func computeMeantoneScale(fractionOfSyntonicCommaToTemperFifthsBy float64, exten
 	}
 
 	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, TemperedInterval(octaveReduceFloat(math.Pow(temperedFifth, float64(i)))))
+		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, TemperedInterval(toDecimalPlaces(octaveReduceFloat(math.Pow(temperedFifth, float64(i))), 3)))
 	}
 
 	slices.Sort(ratiosOfNotesToFundamental)
@@ -131,9 +131,14 @@ func computeBachScale() []TemperedInterval {
 	slices.Sort(ratios) // Sort the ratios in ascending order
 	var intervals []TemperedInterval
 	for _, ratio := range ratios {
-		intervals = append(intervals, TemperedInterval(math.Round(ratio*1000)/1000))
+		intervals = append(intervals, TemperedInterval(toDecimalPlaces(ratio, 3)))
 	}
 	return intervals
+}
+
+func toDecimalPlaces(v float64, p int) float64 {
+	exponent := math.Pow10(p)
+	return math.Round(v*exponent) / exponent
 }
 
 func NewEqualTemperamentScale(divisionsOfOctave uint) TemperedScale {
