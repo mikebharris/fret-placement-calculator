@@ -3,12 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"main/music"
-	"math"
-	music2 "music"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -55,8 +51,8 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 
 	case "":
 		fallthrough
-	//case "ptolemy":
-	//	fretboard = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, parseIntegerQueryParameter(q, "octaves", defaultOctavesToCompute), validDiatonicModeOrDefault(q["diatonicMode"]))
+	case "ptolemy":
+		fretboard = h.fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength, parseIntegerQueryParameter(q, "octaves", defaultOctavesToCompute), validDiatonicModeOrDefault(q["diatonicMode"]))
 
 	case "just5limitFromPythagorean":
 		fretboard = h.fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength)
@@ -64,11 +60,11 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 	case "just5limitFromRatios":
 		fretboard = h.fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength, music.Symmetry(parseStringQueryParameter(q, "justSymmetry", defaultJustSymmetry.String())))
 
-	//case "just7limitFromRatios":
-	//	fretboard = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength)
+	case "just7limitFromRatios":
+		fretboard = h.fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength)
 
-	//case "just13limitFromRatios":
-	//	fretboard = h.fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseIntegerQueryParameter(q, "limit", defaultJustLimit))
+	case "just13limitFromRatios":
+		fretboard = h.fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength, parseIntegerQueryParameter(q, "limit", defaultJustLimit))
 
 	case "bachWellTemperament":
 		fretboard = h.fretPlacementsForBachWohltemperierteKlavier(scaleLength)
@@ -120,268 +116,38 @@ func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPyt
 	return newFretboardFromScale(scaleLength, music.New5LimitPythagoreanScale())
 }
 
-func multipliers(base uint) [][]uint {
-	return [][]uint{{base, 1}, {1, 1}, {1, base}}
-}
-
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry music.Symmetry) Fretboard {
 	return newFretboardFromScale(scaleLength, music.New5LimitJustIntonationChromaticScale(symmetry))
 }
 
-//func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {
-//	return Fretboard{
-//		System:      "7-limit Just Intonation",
-//		Description: "Fret positions for chromatic scale based on 7-limit just intonation pure ratios derived from third-, fifth- and seventh-partial ratios.",
-//		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9), multipliers(7)), nullScaleFilter())),
-//	}
-//}
-//
-//func (h Handler) fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, limit int) Fretboard {
-//	return Fretboard{
-//		System:      fmt.Sprintf("%d-limit Just Intonation", limit),
-//		Description: fmt.Sprintf("Fret positions for just intonation chromatic scale based on %d-limit pure ratios.", limit),
-//		Frets:       h.intervalsToFretPlacements(scaleLength, computeJustScale(buildMultiplierTablesFrom(multipliers(3), multipliers(5), multipliers(9), multipliers(7), multipliers(13)), nullScaleFilter())),
-//	}
-//}
-//
-//func computeJustScale(multipliers [][]uint, filter intervalFilterFunction) []music.Interval {
-//	poolOfPotentialIntervals := justIntervalsFromMultipliers(multipliers, filter)
-//
-//	var preferredIntervals []music.Interval
-//	centsInOctave := 1200.0
-//	for r := 50.0; r <= centsInOctave; r += 100 {
-//		var intervalsInNoteRange []music.Interval
-//		for _, interval := range poolOfPotentialIntervals {
-//			cents := interval.toCents()
-//			if cents >= r && cents < r+100 {
-//				intervalsInNoteRange = append(intervalsInNoteRange, interval)
-//			}
-//		}
-//
-//		//   chosen interval is the simplest integer ratio
-//		var chosenInterval music.Interval
-//		for i, interval := range intervalsInNoteRange {
-//			if i == 0 || (interval.Numerator < chosenInterval.Numerator && interval.Denominator < chosenInterval.Denominator) {
-//				chosenInterval = interval
-//				continue
-//			}
-//		}
-//		preferredIntervals = append(preferredIntervals, chosenInterval)
-//	}
-//
-//	return preferredIntervals
-//}
-//
-//func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) Fretboard {
-//	var intervalMap = map[string][]music.Interval{
-//		"Lydian":     {greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
-//		"Ionian":     {greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone},
-//		"Mixolydian": {greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond},
-//		"Dorian":     {greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond},
-//		"Aeolian":    {greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond},
-//		"Phrygian":   {diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond, diatonicSemitone, lesserMajorSecond, greaterMajorSecond},
-//		"Locrian":    {diatonicSemitone, greaterMajorSecond, lesserMajorSecond, diatonicSemitone, greaterMajorSecond, lesserMajorSecond, greaterMajorSecond},
-//	}
-//
-//	var intervals []Interval
-//	var interval = unison
-//
-//	for i := 0; i < octaves; i++ {
-//		for _, v := range intervalMap[mode] {
-//			interval = Interval{Numerator: interval.Numerator * v.Numerator, Denominator: interval.Denominator * v.Denominator}.simplify()
-//			intervals = append(intervals, interval)
-//		}
-//	}
-//
-//	return Fretboard{
-//		System:      "Ptolemy",
-//		Description: fmt.Sprintf("Fret positions for Ptolemy's 5-limit intense diatonic scale in %s mode.", mode),
-//		Frets:       h.intervalsToFretPlacements(scaleLength, intervals),
-//	}
-//}
+func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {
+	return newFretboardFromScale(scaleLength, music.New7LimitJustIntonationChromaticScale())
+}
+
+func (h Handler) fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, limit int) Fretboard {
+	return newFretboardFromScale(scaleLength, music.New13LimitJustIntonationChromaticScale())
+}
+
+func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) Fretboard {
+	return newFretboardFromScale(scaleLength, music.NewIntenseDiatonicScale(music.MusicalMode(mode)))
+}
 
 func (h Handler) fretPlacementsForSazTuning(scaleLength float64) Fretboard {
 	return newFretboardFromScale(scaleLength, music.NewSazScale())
 }
 
 func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) Fretboard {
-	fractionOfSyntonicCommaToTemperFifthsBy := 0.25
-	temperedFifth := music.PerfectFifth.ToFloat() * math.Pow(music.SyntonicComma.ToFloat(), -fractionOfSyntonicCommaToTemperFifthsBy)
-
-	var fifthsFromTonic int
-	var noteNames []string
-
 	if extendScale {
-		fifthsFromTonic = 9
-		noteNames = []string{"D", "D#", "Eb", "E", "Fb", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B", "Cb", "C", "C#", "Db"}
-	} else {
-		fifthsFromTonic = 6
-		noteNames = []string{"D", "Eb", "E", "F", "F#", "G", "G#", "Ab", "A", "Bb", "B", "C", "C#"}
+		return newFretboardFromScale(scaleLength, music.NewExtendedQuarterCommaMeantoneScale())
 	}
 
-	var ratiosOfNotesToFundamental []float64
-	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
-		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, h.octaveReduceFloat(math.Pow(temperedFifth, float64(i))))
-	}
-
-	slices.Sort(ratiosOfNotesToFundamental)
-
-	prevRatio := 1.0
-	var frets []Fret
-	for fretNumber, ratio := range ratiosOfNotesToFundamental {
-		if fretNumber == 0 {
-			continue
-		}
-
-		interval := ratio / prevRatio
-		frets = append(frets, Fret{
-			Label:    fmt.Sprintf("%d (%s)", fretNumber, noteNames[fretNumber]),
-			Position: math.Round((scaleLength-(scaleLength/ratio))*10) / 10,
-			Comment:  fmt.Sprintf("ratio: %.3f; interval: %.6f", ratio, interval),
-		})
-		prevRatio = ratio
-	}
-
-	frets = append(frets, Fret{
-		Label:    fmt.Sprintf("%d (Octave)", len(frets)+1),
-		Position: scaleLength / 2,
-		Comment:  fmt.Sprintf("ratio: %.1f; interval: %.6f", 2.0, 2.0/prevRatio),
-	})
-
-	var description string
-	if extendScale {
-		description = fmt.Sprintf("Fret positions for extended meantone computed by narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used given a tonic of D.", fractionOfSyntonicCommaToTemperFifthsBy)
-	} else {
-		description = fmt.Sprintf("Fret positions for meantone computed by narrowing of fifths by %.2f of a syntonic comma (81/80).  Nominal note names used given a tonic of D.", fractionOfSyntonicCommaToTemperFifthsBy)
-	}
-
-	return Fretboard{
-		System:      "meantone",
-		Description: description,
-		ScaleLength: scaleLength,
-		Frets:       frets,
-	}
-}
-
-func (h Handler) intervalsToFretPlacements(scaleLength float64, intervals []music.Interval) []Fret {
-	var frets []Fret
-	var previousInterval = music.Unison
-	for _, intervalOfNote := range intervals {
-		frets = append(frets, Fret{
-			Label:    intervalOfNote.String(),
-			Position: math.Round((scaleLength-(scaleLength/float64(intervalOfNote.numerator))*float64(intervalOfNote.Denominator))*100) / 100,
-			Comment:  intervalOfNote.Name(),
-			Interval: intervalOfNote.Subtract(previousInterval).String(),
-		})
-		previousInterval = intervalOfNote
-	}
-	return frets
+	return newFretboardFromScale(scaleLength, music.NewQuarterCommaMeantoneScale())
 }
 
 func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) Fretboard {
-	fretPlacements := Fretboard{
-		System:      fmt.Sprintf("%d-TET", divisionsOfOctave),
-		Description: fmt.Sprintf("Fret positions for %d-tone equal temperament.", divisionsOfOctave),
-		ScaleLength: scaleLength,
-		Frets:       nil,
-	}
-
-	edo := music2.EquallyDividedOctave{
-		NumberOfDivisions: uint(divisionsOfOctave),
-	}.divisions()
-
-	for f, d := range edo {
-		distanceFromNut, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", scaleLength-(scaleLength/d.Ratio)), 64)
-		fretPlacements.Frets = append(fretPlacements.Frets, Fret{
-			Label:    fmt.Sprintf("Fret %d", f+1),
-			Position: distanceFromNut,
-			Comment:  fmt.Sprintf("%.2f cents", d.Cents),
-		})
-	}
-	return fretPlacements
+	return newFretboardFromScale(scaleLength, music.NewEqualTemperamentScale(uint(divisionsOfOctave)))
 }
 
-func (h Handler) octaveReduceFloat(ratio float64) float64 {
-	for ratio >= 2.0 || ratio < 1.0 {
-		if ratio >= 2.0 {
-			ratio /= 2.0
-		}
-		if ratio < 1.0 {
-			ratio *= 2.0
-		}
-	}
-	return ratio
-}
-
-// Bach's Well Temperament as per
-// Bach's Extraordinary Temperament: Our Rosetta Stone - Bradley Lehman
-// Early Music Volume 33, Number 1, February 2005, pp. 3-23 (Article)
-// Reference: https://academic.oup.com/em/article-abstract/33/1/3/535436?redirectedFrom=fulltext
 func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) Fretboard {
-	// Narrowing of the fifths as outlined by Lehman
-	temperingFractions := []float64{
-		0.0,         // Pure fifth
-		-1.0 / 12.0, // Twelfth-comma narrowed
-		-1.0 / 6.0,  // Sixth-comma narrowed
-		0.0,         // Pure fifth
-		-1.0 / 6.0,  // Sixth-comma narrowed
-		-1.0 / 12.0, // Twelfth-comma narrowed
-		0.0,         // Pure fifth
-		-1.0 / 6.0,  // Sixth-comma narrowed
-		-1.0 / 12.0, // Twelfth-comma narrowed
-		0.0,         // Pure fifth
-		-1.0 / 6.0,  // Sixth-comma narrowed
-		-1.0 / 12.0, // Twelfth-comma narrowed
-	}
-
-	// Calculate tempered fifths
-	temperedFifths := make([]float64, 12)
-	for i := 0; i < 12; i++ {
-		temperedFifths[i] = 3.0 / 2.0 * math.Pow(music.SyntonicComma.ToFloat(), temperingFractions[i])
-	}
-
-	// Derive ratios by walking the circle of fifths
-	ratios := make([]float64, 12)
-	ratios[0] = 1.0 // Start with the tonic
-	for i := 1; i < 12; i++ {
-		ratios[i] = ratios[i-1] * temperedFifths[(i-1)%12]
-	}
-
-	// Reduce ratios to within the octave [1.0, 2.0)
-	for i := range ratios {
-		ratios[i] = h.octaveReduceFloat(ratios[i])
-	}
-
-	slices.Sort(ratios) // Sort the ratios in ascending order
-
-	intervalNames := []string{"Unison", "Minor Second", "Major Second", "Minor Third", "Major Third", "Fourth", "Augmented Fourth", "Fifth", "Augmented Fifth", "Major Sixth", "Minor Seventh", "Major Seventh"}
-	prevRatio := 1.0
-	var frets []Fret
-	for fretNumber, ratio := range ratios {
-		if fretNumber == 0 {
-			continue // Skip the tonic (unfretted)
-		}
-		distanceFromNut := scaleLength - (scaleLength / ratio)
-		frets = append(frets, Fret{
-			Label:    fmt.Sprintf("%d (%s)", fretNumber, intervalNames[fretNumber%len(intervalNames)]),
-			Position: math.Round(distanceFromNut*1000) / 1000, // Round to 3 decimal places
-			Comment:  fmt.Sprintf("ratio: %.6f; interval: %.6f", ratio, ratio/prevRatio),
-		})
-		prevRatio = ratio
-	}
-
-	// Add the octave fret (2nd partial)
-	frets = append(frets, Fret{
-		Label:    fmt.Sprintf("%d (Octave)", len(frets)+1),
-		Position: scaleLength / 2,
-		Comment:  fmt.Sprintf("ratio: %.1f; interval: %.6f", 2.0, 2.0/prevRatio),
-	})
-
-	description := "Fret positions derived from Lehman's decoding of Bach's Well-Tempered tuning, using sixth-comma, twelfth-comma, and pure fifths."
-	return Fretboard{
-		System:      "Bach's Well-Tempered Tuning",
-		Description: description,
-		ScaleLength: scaleLength,
-		Frets:       frets,
-	}
+	return newFretboardFromScale(scaleLength, music.NewBachWohltemperierteKlavierScale())
 }

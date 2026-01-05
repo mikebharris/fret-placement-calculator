@@ -62,13 +62,13 @@ func Test_ShouldReturnScaleForQuarterCommaMeantone(t *testing.T) {
 
 func Test_ShouldReturnScaleForExtendedQuarterCommaMeantone(t *testing.T) {
 	// Given
-	scale := NewQuarterCommaMeantoneScale()
+	scale := NewExtendedQuarterCommaMeantoneScale()
 
 	// When
 	intervals := scale.Intervals()
 	assert.Equal(t, "Extended Quarter-Comma Meantone", scale.System())
 	assert.Equal(t, "Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).", scale.Description())
-	assert.Equal(t, 19, len(intervals))
+	assert.Equal(t, 20, len(intervals))
 
 	//lesserSemitone := 1.044907
 	//dieses := 1.024

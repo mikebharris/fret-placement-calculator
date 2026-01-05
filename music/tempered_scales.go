@@ -32,6 +32,14 @@ func NewQuarterCommaMeantoneScale() TemperedScale {
 	}
 }
 
+func NewExtendedQuarterCommaMeantoneScale() TemperedScale {
+	return TemperedScale{
+		system:      "Extended Quarter-Comma Meantone",
+		description: "Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).",
+		algorithm:   computeExtendedQuarterCommaMeantoneScale,
+	}
+}
+
 func (s TemperedScale) System() string {
 	return s.system
 }
@@ -47,19 +55,28 @@ func (s TemperedScale) Intervals() []TemperedInterval {
 type computeTemperedIntervalsFn func() []TemperedInterval
 
 func computeQuarterCommaMeantoneScale() []TemperedInterval {
-	fractionOfSyntonicCommaToTemperFifthsBy := 0.25
+	return computeMeantoneScale(0.25, false)
+}
+
+func computeMeantoneScale(fractionOfSyntonicCommaToTemperFifthsBy float64, extendScale bool) []TemperedInterval {
 	temperedFifth := PerfectFifth.ToFloat() * math.Pow(SyntonicComma.ToFloat(), -fractionOfSyntonicCommaToTemperFifthsBy)
 
-	var fifthsFromTonic = 6
-
 	var ratiosOfNotesToFundamental = []TemperedInterval{2.0}
+	var fifthsFromTonic = 6
+	if extendScale {
+		fifthsFromTonic = 9
+	}
+
 	for i := -fifthsFromTonic; i <= fifthsFromTonic; i++ {
 		ratiosOfNotesToFundamental = append(ratiosOfNotesToFundamental, TemperedInterval(octaveReduceFloat(math.Pow(temperedFifth, float64(i)))))
 	}
 
 	slices.Sort(ratiosOfNotesToFundamental)
-
 	return ratiosOfNotesToFundamental
+}
+
+func computeExtendedQuarterCommaMeantoneScale() []TemperedInterval {
+	return computeMeantoneScale(0.25, true)
 }
 
 func octaveReduceFloat(ratio float64) float64 {
