@@ -3,11 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"main/music"
 	"net/http"
 	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/mikebharris/music"
 )
 
 const (
@@ -108,46 +108,46 @@ func parseIntegerQueryParameter(q map[string]string, key string, fallback int) i
 }
 
 func (h Handler) fretPlacementsForPythagoreanTuning(scaleLength float64) Fretboard {
-	return newFretboardFromScale(scaleLength, music.NewPythagoreanScale())
+	return newFretboardFromJustScale(scaleLength, music.NewPythagoreanScale())
 }
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticTuningBuiltFromAdjustingPythagoreanScale(scaleLength float64) Fretboard {
 	// Derive scale by adjusting Pythagorean scale by syntonic comma (81/80)
-	return newFretboardFromScale(scaleLength, music.New5LimitPythagoreanScale())
+	return newFretboardFromJustScale(scaleLength, music.New5LimitPythagoreanScale())
 }
 
 func (h Handler) fretPlacementsFor5LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, symmetry music.Symmetry) Fretboard {
-	return newFretboardFromScale(scaleLength, music.New5LimitJustIntonationChromaticScale(symmetry))
+	return newFretboardFromJustScale(scaleLength, music.New5LimitJustIntonationChromaticScale(symmetry))
 }
 
 func (h Handler) fretPlacementsFor7LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64) Fretboard {
-	return newFretboardFromScale(scaleLength, music.New7LimitJustIntonationChromaticScale())
+	return newFretboardFromJustScale(scaleLength, music.New7LimitJustIntonationChromaticScale())
 }
 
 func (h Handler) fretPlacementsFor13LimitJustChromaticScaleBasedOnPureRatios(scaleLength float64, limit int) Fretboard {
-	return newFretboardFromScale(scaleLength, music.New13LimitJustIntonationChromaticScale())
+	return newFretboardFromJustScale(scaleLength, music.New13LimitJustIntonationChromaticScale())
 }
 
 func (h Handler) fretPlacementsForPtolemysIntenseDiatonicTuning(scaleLength float64, octaves int, mode string) Fretboard {
-	return newFretboardFromScale(scaleLength, music.NewIntenseDiatonicScale(music.MusicalMode(mode)))
+	return newFretboardFromJustScale(scaleLength, music.NewIntenseDiatonicScale(music.MusicalMode(mode)))
 }
 
 func (h Handler) fretPlacementsForSazTuning(scaleLength float64) Fretboard {
-	return newFretboardFromScale(scaleLength, music.NewSazScale())
+	return newFretboardFromJustScale(scaleLength, music.NewSazScale())
 }
 
 func (h Handler) fretPlacementsForQuarterCommaMeantoneTuning(scaleLength float64, extendScale bool) Fretboard {
 	if extendScale {
-		return newFretboardFromScale(scaleLength, music.NewExtendedQuarterCommaMeantoneScale())
+		return newFretboardFromTemperedScale(scaleLength, music.NewExtendedQuarterCommaMeantoneScale())
 	}
 
-	return newFretboardFromScale(scaleLength, music.NewQuarterCommaMeantoneScale())
+	return newFretboardFromTemperedScale(scaleLength, music.NewQuarterCommaMeantoneScale())
 }
 
 func (h Handler) fretPlacementsForEqualTemperamentTuning(scaleLength float64, divisionsOfOctave int) Fretboard {
-	return newFretboardFromScale(scaleLength, music.NewEqualTemperamentScale(uint(divisionsOfOctave)))
+	return newFretboardFromTemperedScale(scaleLength, music.NewEqualTemperamentScale(uint(divisionsOfOctave)))
 }
 
 func (h Handler) fretPlacementsForBachWohltemperierteKlavier(scaleLength float64) Fretboard {
-	return newFretboardFromScale(scaleLength, music.NewBachWohltemperierteKlavierScale())
+	return newFretboardFromTemperedScale(scaleLength, music.NewBachWohltemperierteKlavierScale())
 }

@@ -3,6 +3,7 @@ package handler_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"main/lambdas/fret-placement-calculator-api/handler"
 	"net/http"
 	"testing"
@@ -88,9 +89,9 @@ func Test_ShouldDefaultToIonianIfNonSensicalPtolemicDiatonicScaleIsProvided(t *t
 	var fretboard handler.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
-	assert.Equal(t, "Ptolemy", fretboard.System)
-	assert.Equal(t, "Fret positions for Ptolemy's 5-limit intense diatonic scale in Ionian mode.", fretboard.Description)
-	assert.Equal(t, 7, len(fretboard.Frets))
+	assert.Equal(t, "Ptolemy Intense Diatonic", fretboard.System)
+	assert.Equal(t, "Fret positions based on Ptolemy's 5-limit intense diatonic scale in Ionian mode.", fretboard.Description)
+	assert.Equal(t, 8, len(fretboard.Frets))
 }
 
 func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
@@ -149,7 +150,8 @@ func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
 	fretboard := handler.Fretboard{}
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, float64(540), fretboard.ScaleLength)
-	assert.Equal(t, "saz", fretboard.System)
-	assert.Equal(t, "Fret positions for traditional Turkish Saz tuning ratios.", fretboard.Description)
-	assert.Equal(t, 17, len(fretboard.Frets))
+	assert.Equal(t, "Saz", fretboard.System)
+	assert.Equal(t, "Fret positions based on Turkish Saz tuning ratios.", fretboard.Description)
+	assert.Equal(t, 18, len(fretboard.Frets))
+	fmt.Println(fretboard.Frets)
 }
