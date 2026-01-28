@@ -1,6 +1,8 @@
 # Fret Placement Calculator AWS Lambda service
 
-Outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
+This simple AWS Lambda function depends on my music theory Go module at https://github.com/mikebharris/music.  All the computation is done in that module; this project is just a thin wrapper to expose it as a web service.
+
+The service outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
 various tunings, including:
 
 * Just Intonation by various means
@@ -10,9 +12,9 @@ various tunings, including:
 * Any Equal Temperament (12, 19, 23, 31, 53, 55, etc)
 * Pythagorean
 * Turkish Saz
+* Bach's Well Temperament (as decoded by Bradley Lehman)
 
-With the exception of the quarter-comma meantone calculator, the rest are agnostic of the actual open string tuning,
-tension of the string, type of instrument, etc.
+The fret positions are agnostic of the actual open string tuning, tension of the string, type of instrument, etc.
 
 ## Examples
 
@@ -21,20 +23,20 @@ tension of the string, type of instrument, etc.
 
 ##### Parameters
 
-> | name                    | type     | data type | default    | description                                                                                                 |
-> |-------------------------|----------|-----------|------------|-------------------------------------------------------------------------------------------------------------|
-> | `scaleLength`           | required | float64   |            | The scale length from nut to bridge (saddle)                                                                |
-> | `tuningSystem`          | optional | string    | just       | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
-> | `diatonicMode`          | optional | string    | Ionian     | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
-> | `justSymmetry`          | optional | string    | asymmetric | Type of major seconds and minor sevenths to use in just scale                                               |
-> | `octaveDivisions`       | optional | int       | 31         | Number of divisions of the octave for equal temperament                                                     |
-> | `octaves`               | optional | int       | 1          | Number of octaves of frets to compute                                                                       |
+> | name           | type     | data type | default | description                                                                                                 |
+> |----------------|----------|-----------|---------|-------------------------------------------------------------------------------------------------------------|
+> | `scaleLength`  | required | float64   |         | The scale length from nut to bridge (saddle)                                                                |
+> | `tuningSystem` | required | string    |         | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
+> | `diatonicMode` | optional | string    | Ionian  | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
+> | `limit`        | optional | int       | 5       | Limit for just intonation (prime number, such as 3, 5, 11, etc_ - tuningSystem = 'justFromRatios'           |
+> | `division`     | optional | int       | 31      | Number of divisions of the octave for equal temperament                                                     |
+> | `octaves`      | optional | int       | 1       | Number of octaves of frets to compute                                                                       |
 
 ##### Values for `tuningSystem`
 
 > | value                       | description                                                                         |
 > |-----------------------------|-------------------------------------------------------------------------------------|
-> | `just5limitFromRatios`      | 5-limit Just Intonation derived from pure ratios                                    |
+> | `justFromRatios`            | 5-limit Just Intonation derived from pure ratios                                    |
 > | `just5limitFromPythagorean` | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
 > | `meantone`                  | Quarter-Comma Meantone                                                              |
 > | `extendedMeantone`          | Extended Quarter-Comma Meantone                                                     |
@@ -43,14 +45,6 @@ tension of the string, type of instrument, etc.
 > | `equal`                     | Equal Temperament                                                                   |
 > | `ptolemy`                   | Ptolemy's Intense Diatonic tuning                                                   |
 > | `saz`                       | Turkish Saz tuning                                                                  |
-
-##### Values for `justSymmetry`
-
-> | value        | description                                                               |
-> |--------------|---------------------------------------------------------------------------|
-> | `asymmetric` | Use asymmetric scale with greater major seconds and lesser minor sevenths |
-> | `symmetric1` | Use symmetric scale with lesser major seconds and greater minor sevenths  |
-> | `symmetric2` | Use symmetric scale with greater major seconds and lesser minor sevenths  |
 
 ##### Responses
 
@@ -64,13 +58,13 @@ tension of the string, type of instrument, etc.
 Compute Ptolemy's Intense Diatonic tuning for a scale length of 570mm:
 
 > ```shell
->  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=570
+>  curl -X GET -H "Content-Type: application/json" https://someawsgeneratedlambdaid.lambda-url.us-east-1.on.aws/?scaleLength=570&tuningSystem=ptolemy
 > ```
 
 ````json
 {
-  "system": "Ptolemy",
-  "description": "Fret positions for Ptolemy's 5-limit intense diatonic scale in Ionian mode.",
+  "system": "Ptolemy Intense Diatonic",
+  "description": "Fret positions based on Ptolemy's 5-limit intense diatonic scale in Ionian mode.",
   "scaleLength": 570,
   "frets": [
     {

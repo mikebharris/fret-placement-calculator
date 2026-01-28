@@ -120,14 +120,17 @@ func (s *steps) iAmProvidedWithTheFretPlacementsFor5LimitChromaticJustIntonation
 		return fmt.Errorf("unmarshalling result: %s", err)
 	}
 
-	assert.Equal(s.t, "5-limit Just Intonation", fretboard.System)
+	assert.Equal(s.t, "5-limit Pythagorean", fretboard.System)
+	assert.Equal(s.t, "Fret positions based on 5-limit just intonation pure ratios chromatic scale derived from applying syntonic comma to Pythagorean ratios.", fretboard.Description)
 	assert.Equal(s.t, 540.0, fretboard.ScaleLength)
-	assert.Equal(s.t, 13, len(fretboard.Frets))
+	assert.Equal(s.t, 14, len(fretboard.Frets))
 
-	assert.Equal(s.t, "10:9", fretboard.Frets[1].Label)
-	assert.Equal(s.t, 54.00, fretboard.Frets[1].Position)
+	assert.Equal(s.t, "10:9", fretboard.Frets[2].Label)
+	assert.Equal(s.t, 54.00, fretboard.Frets[2].Position)
 
-	assert.Equal(s.t, "2:1", fretboard.Frets[12].Label)
-	assert.Equal(s.t, 270.0, fretboard.Frets[12].Position)
+	assert.Equal(s.t, "15:8", fretboard.Frets[12].Label)
+	assert.Equal(s.t, 252.0, fretboard.Frets[12].Position)
+	assert.Equal(s.t, "2:1", fretboard.Frets[13].Label)
+	assert.Equal(s.t, 270.0, fretboard.Frets[13].Position)
 	return nil
 }
