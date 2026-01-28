@@ -143,7 +143,7 @@ func Test_ShouldDefaultToIonianIfNonSensicalPtolemyDiatonicScaleIsProvided(t *te
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Ptolemy Intense Diatonic", fretboard.System)
@@ -181,7 +181,7 @@ func Test_ShouldReturnFretPlacementsForPtolemyDiatonicScaleForProvidedMusicalMod
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Ptolemy Intense Diatonic", fretboard.System)
@@ -219,7 +219,7 @@ func Test_ShouldReturnFretPlacementsForPythagoreanScale(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Pythagorean", fretboard.System)
@@ -239,7 +239,7 @@ func Test_ShouldReturnFretPlacementsForFiveLimitPythagoreanScale(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "5-limit Pythagorean", fretboard.System)
@@ -259,7 +259,7 @@ func Test_ShouldReturnFretPlacementsForFiveLimitJustScaleFromPureRatios(t *testi
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretboard.System)
@@ -279,38 +279,38 @@ func Test_ShouldReturnFretPlacementsForFiveLimitJustScaleFromPureRatiosOverTwoOc
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "5-limit Just Intonation", fretboard.System)
 	assert.Equal(t, "Fret positions based on Just Intonation chromatic scale based on 5-limit pure ratios.", fretboard.Description)
 	assert.Equal(t, 25, len(fretboard.Frets))
 
-	assert.Equal(t, Fret{Label: "1:1", Position: 0, Comment: "Perfect Unison", Interval: "1:1"}, fretboard.Frets[0])
-	assert.Equal(t, Fret{Label: "16:15", Position: 33.75, Comment: "Minor Second", Interval: "16:15"}, fretboard.Frets[1])
-	assert.Equal(t, Fret{Label: "9:8", Position: 60.0, Comment: "Pythagorean (Greater) Major Second", Interval: "135:128"}, fretboard.Frets[2])
-	assert.Equal(t, Fret{Label: "6:5", Position: 90.0, Comment: "Minor Third", Interval: "16:15"}, fretboard.Frets[3])
-	assert.Equal(t, Fret{Label: "5:4", Position: 108.0, Comment: "Major Third", Interval: "25:24"}, fretboard.Frets[4])
-	assert.Equal(t, Fret{Label: "4:3", Position: 135.0, Comment: "Perfect Fourth", Interval: "16:15"}, fretboard.Frets[5])
-	assert.Equal(t, Fret{Label: "45:32", Position: 156.0, Comment: "Augmented Fourth", Interval: "135:128"}, fretboard.Frets[6])
-	assert.Equal(t, Fret{Label: "3:2", Position: 180.0, Comment: "Perfect Fifth", Interval: "16:15"}, fretboard.Frets[7])
-	assert.Equal(t, Fret{Label: "8:5", Position: 202.5, Comment: "Just Minor Sixth", Interval: "16:15"}, fretboard.Frets[8])
-	assert.Equal(t, Fret{Label: "5:3", Position: 216.0, Comment: "Major Sixth", Interval: "25:24"}, fretboard.Frets[9])
-	assert.Equal(t, Fret{Label: "9:5", Position: 240.0, Comment: "Just (Greater) Minor Seventh", Interval: "27:25"}, fretboard.Frets[10])
-	assert.Equal(t, Fret{Label: "15:8", Position: 252.0, Comment: "Just Major Seventh", Interval: "25:24"}, fretboard.Frets[11])
-	assert.Equal(t, Fret{Label: "2:1", Position: 270.0, Comment: "Perfect Octave", Interval: "16:15"}, fretboard.Frets[12])
-	assert.Equal(t, Fret{Label: "16:15", Position: 286.88, Comment: "Minor Second", Interval: "16:15"}, fretboard.Frets[13])
-	assert.Equal(t, Fret{Label: "9:8", Position: 300.0, Comment: "Pythagorean (Greater) Major Second", Interval: "135:128"}, fretboard.Frets[14])
-	assert.Equal(t, Fret{Label: "6:5", Position: 315.0, Comment: "Minor Third", Interval: "16:15"}, fretboard.Frets[15])
-	assert.Equal(t, Fret{Label: "5:4", Position: 324.0, Comment: "Major Third", Interval: "25:24"}, fretboard.Frets[16])
-	assert.Equal(t, Fret{Label: "4:3", Position: 337.5, Comment: "Perfect Fourth", Interval: "16:15"}, fretboard.Frets[17])
-	assert.Equal(t, Fret{Label: "45:32", Position: 348.0, Comment: "Augmented Fourth", Interval: "135:128"}, fretboard.Frets[18])
-	assert.Equal(t, Fret{Label: "3:2", Position: 360.0, Comment: "Perfect Fifth", Interval: "16:15"}, fretboard.Frets[19])
-	assert.Equal(t, Fret{Label: "8:5", Position: 371.25, Comment: "Just Minor Sixth", Interval: "16:15"}, fretboard.Frets[20])
-	assert.Equal(t, Fret{Label: "5:3", Position: 378.0, Comment: "Major Sixth", Interval: "25:24"}, fretboard.Frets[21])
-	assert.Equal(t, Fret{Label: "9:5", Position: 390.0, Comment: "Just (Greater) Minor Seventh", Interval: "27:25"}, fretboard.Frets[22])
-	assert.Equal(t, Fret{Label: "15:8", Position: 396.0, Comment: "Just Major Seventh", Interval: "25:24"}, fretboard.Frets[23])
-	assert.Equal(t, Fret{Label: "2:1", Position: 405.0, Comment: "Perfect Octave", Interval: "16:15"}, fretboard.Frets[24])
+	assert.Equal(t, music.Fret{Label: "1:1", Position: 0, Comment: "Perfect Unison", Interval: "1:1"}, fretboard.Frets[0])
+	assert.Equal(t, music.Fret{Label: "16:15", Position: 33.75, Comment: "Minor Second", Interval: "16:15"}, fretboard.Frets[1])
+	assert.Equal(t, music.Fret{Label: "9:8", Position: 60.0, Comment: "Pythagorean (Greater) Major Second", Interval: "135:128"}, fretboard.Frets[2])
+	assert.Equal(t, music.Fret{Label: "6:5", Position: 90.0, Comment: "Minor Third", Interval: "16:15"}, fretboard.Frets[3])
+	assert.Equal(t, music.Fret{Label: "5:4", Position: 108.0, Comment: "Major Third", Interval: "25:24"}, fretboard.Frets[4])
+	assert.Equal(t, music.Fret{Label: "4:3", Position: 135.0, Comment: "Perfect Fourth", Interval: "16:15"}, fretboard.Frets[5])
+	assert.Equal(t, music.Fret{Label: "45:32", Position: 156.0, Comment: "Augmented Fourth", Interval: "135:128"}, fretboard.Frets[6])
+	assert.Equal(t, music.Fret{Label: "3:2", Position: 180.0, Comment: "Perfect Fifth", Interval: "16:15"}, fretboard.Frets[7])
+	assert.Equal(t, music.Fret{Label: "8:5", Position: 202.5, Comment: "Just Minor Sixth", Interval: "16:15"}, fretboard.Frets[8])
+	assert.Equal(t, music.Fret{Label: "5:3", Position: 216.0, Comment: "Major Sixth", Interval: "25:24"}, fretboard.Frets[9])
+	assert.Equal(t, music.Fret{Label: "9:5", Position: 240.0, Comment: "Just (Greater) Minor Seventh", Interval: "27:25"}, fretboard.Frets[10])
+	assert.Equal(t, music.Fret{Label: "15:8", Position: 252.0, Comment: "Just Major Seventh", Interval: "25:24"}, fretboard.Frets[11])
+	assert.Equal(t, music.Fret{Label: "2:1", Position: 270.0, Comment: "Perfect Octave", Interval: "16:15"}, fretboard.Frets[12])
+	assert.Equal(t, music.Fret{Label: "16:15", Position: 286.88, Comment: "Minor Second", Interval: "16:15"}, fretboard.Frets[13])
+	assert.Equal(t, music.Fret{Label: "9:8", Position: 300.0, Comment: "Pythagorean (Greater) Major Second", Interval: "135:128"}, fretboard.Frets[14])
+	assert.Equal(t, music.Fret{Label: "6:5", Position: 315.0, Comment: "Minor Third", Interval: "16:15"}, fretboard.Frets[15])
+	assert.Equal(t, music.Fret{Label: "5:4", Position: 324.0, Comment: "Major Third", Interval: "25:24"}, fretboard.Frets[16])
+	assert.Equal(t, music.Fret{Label: "4:3", Position: 337.5, Comment: "Perfect Fourth", Interval: "16:15"}, fretboard.Frets[17])
+	assert.Equal(t, music.Fret{Label: "45:32", Position: 348.0, Comment: "Augmented Fourth", Interval: "135:128"}, fretboard.Frets[18])
+	assert.Equal(t, music.Fret{Label: "3:2", Position: 360.0, Comment: "Perfect Fifth", Interval: "16:15"}, fretboard.Frets[19])
+	assert.Equal(t, music.Fret{Label: "8:5", Position: 371.25, Comment: "Just Minor Sixth", Interval: "16:15"}, fretboard.Frets[20])
+	assert.Equal(t, music.Fret{Label: "5:3", Position: 378.0, Comment: "Major Sixth", Interval: "25:24"}, fretboard.Frets[21])
+	assert.Equal(t, music.Fret{Label: "9:5", Position: 390.0, Comment: "Just (Greater) Minor Seventh", Interval: "27:25"}, fretboard.Frets[22])
+	assert.Equal(t, music.Fret{Label: "15:8", Position: 396.0, Comment: "Just Major Seventh", Interval: "25:24"}, fretboard.Frets[23])
+	assert.Equal(t, music.Fret{Label: "2:1", Position: 405.0, Comment: "Perfect Octave", Interval: "16:15"}, fretboard.Frets[24])
 }
 
 func Test_ShouldReturnFretPlacementsForThirteenLimitJustScaleFromPureRatios(t *testing.T) {
@@ -325,7 +325,7 @@ func Test_ShouldReturnFretPlacementsForThirteenLimitJustScaleFromPureRatios(t *t
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "13-limit Just Intonation", fretboard.System)
@@ -345,7 +345,7 @@ func Test_ShouldReturnFretPlacementsForSaz(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Saz", fretboard.System)
@@ -365,7 +365,7 @@ func Test_ShouldReturnFretPlacementsForBachWellTemperament(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Bach's Well-Tempered Tuning", fretboard.System)
@@ -385,13 +385,13 @@ func Test_ShouldReturnFretPlacementsForQuarterCommaMeantoneScale(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Quarter-Comma Meantone", fretboard.System)
 	assert.Equal(t, "Fret positions based on Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).", fretboard.Description)
 	assert.Equal(t, 14, len(fretboard.Frets))
-	assert.Equal(t, Fret{Label: "117.13 cents", Position: 35.33}, fretboard.Frets[1])
+	assert.Equal(t, music.Fret{Label: "117.13 cents", Position: 35.33}, fretboard.Frets[1])
 }
 
 func Test_ShouldReturnFretPlacementsForExtendedQuarterCommaMeantoneScale(t *testing.T) {
@@ -406,14 +406,14 @@ func Test_ShouldReturnFretPlacementsForExtendedQuarterCommaMeantoneScale(t *test
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, headers, response.Headers)
 
-	var fretboard Fretboard
+	var fretboard music.Fretboard
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, 540.0, fretboard.ScaleLength)
 	assert.Equal(t, "Extended Quarter-Comma Meantone", fretboard.System)
 	assert.Equal(t, "Fret positions based on Meantone temperament achieved by narrowing of fifths by 0.25 of a syntonic comma (81/80).", fretboard.Description)
 	assert.Equal(t, 20, len(fretboard.Frets))
-	assert.Equal(t, Fret{Label: "76.20 cents", Position: 23.25}, fretboard.Frets[1])
-	assert.Equal(t, Fret{Label: "117.13 cents", Position: 35.33}, fretboard.Frets[2])
+	assert.Equal(t, music.Fret{Label: "76.20 cents", Position: 23.25}, fretboard.Frets[1])
+	assert.Equal(t, music.Fret{Label: "117.13 cents", Position: 35.33}, fretboard.Frets[2])
 }
 
 func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
@@ -427,7 +427,7 @@ func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
 	assert.Equal(t, response.StatusCode, http.StatusOK)
 	assert.Equal(t, response.Headers, headers)
 
-	fretboard := Fretboard{}
+	fretboard := music.Fretboard{}
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, float64(540), fretboard.ScaleLength)
 	assert.Equal(t, "Equal Temperament", fretboard.System)
@@ -447,25 +447,25 @@ func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T
 	assert.Equal(t, response.StatusCode, http.StatusOK)
 	assert.Equal(t, response.Headers, headers)
 
-	fretboard := Fretboard{}
+	fretboard := music.Fretboard{}
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, float64(600), fretboard.ScaleLength)
 	assert.Equal(t, "Equal Temperament", fretboard.System)
 	assert.Equal(t, "Fret positions based on 12-tone equal temperament.", fretboard.Description)
 	assert.Equal(t, 13, len(fretboard.Frets))
-	assert.Equal(t, Fret{Label: "0.00 cents", Position: 0}, fretboard.Frets[0])
-	assert.Equal(t, Fret{Label: "100.00 cents", Position: 33.68}, fretboard.Frets[1])
-	assert.Equal(t, Fret{Label: "200.00 cents", Position: 65.46}, fretboard.Frets[2])
-	assert.Equal(t, Fret{Label: "300.00 cents", Position: 95.46}, fretboard.Frets[3])
-	assert.Equal(t, Fret{Label: "400.00 cents", Position: 123.78}, fretboard.Frets[4])
-	assert.Equal(t, Fret{Label: "500.00 cents", Position: 150.51}, fretboard.Frets[5])
-	assert.Equal(t, Fret{Label: "600.00 cents", Position: 175.74}, fretboard.Frets[6])
-	assert.Equal(t, Fret{Label: "700.00 cents", Position: 199.55}, fretboard.Frets[7])
-	assert.Equal(t, Fret{Label: "800.00 cents", Position: 222.02}, fretboard.Frets[8])
-	assert.Equal(t, Fret{Label: "900.00 cents", Position: 243.24}, fretboard.Frets[9])
-	assert.Equal(t, Fret{Label: "1000.00 cents", Position: 263.26}, fretboard.Frets[10])
-	assert.Equal(t, Fret{Label: "1100.00 cents", Position: 282.16}, fretboard.Frets[11])
-	assert.Equal(t, Fret{Label: "1200.00 cents", Position: 300.0}, fretboard.Frets[12])
+	assert.Equal(t, music.Fret{Label: "0.00 cents", Position: 0}, fretboard.Frets[0])
+	assert.Equal(t, music.Fret{Label: "100.00 cents", Position: 33.68}, fretboard.Frets[1])
+	assert.Equal(t, music.Fret{Label: "200.00 cents", Position: 65.46}, fretboard.Frets[2])
+	assert.Equal(t, music.Fret{Label: "300.00 cents", Position: 95.46}, fretboard.Frets[3])
+	assert.Equal(t, music.Fret{Label: "400.00 cents", Position: 123.78}, fretboard.Frets[4])
+	assert.Equal(t, music.Fret{Label: "500.00 cents", Position: 150.51}, fretboard.Frets[5])
+	assert.Equal(t, music.Fret{Label: "600.00 cents", Position: 175.74}, fretboard.Frets[6])
+	assert.Equal(t, music.Fret{Label: "700.00 cents", Position: 199.55}, fretboard.Frets[7])
+	assert.Equal(t, music.Fret{Label: "800.00 cents", Position: 222.02}, fretboard.Frets[8])
+	assert.Equal(t, music.Fret{Label: "900.00 cents", Position: 243.24}, fretboard.Frets[9])
+	assert.Equal(t, music.Fret{Label: "1000.00 cents", Position: 263.26}, fretboard.Frets[10])
+	assert.Equal(t, music.Fret{Label: "1100.00 cents", Position: 282.16}, fretboard.Frets[11])
+	assert.Equal(t, music.Fret{Label: "1200.00 cents", Position: 300.0}, fretboard.Frets[12])
 }
 
 func Test_ShouldReturnMultipleOctavesOfFretsIfSpecified(t *testing.T) {
@@ -480,27 +480,27 @@ func Test_ShouldReturnMultipleOctavesOfFretsIfSpecified(t *testing.T) {
 	assert.Equal(t, response.StatusCode, http.StatusOK)
 	assert.Equal(t, response.Headers, headers)
 
-	fretboard := Fretboard{}
+	fretboard := music.Fretboard{}
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, float64(600), fretboard.ScaleLength)
 	assert.Equal(t, "Equal Temperament", fretboard.System)
 	assert.Equal(t, "Fret positions based on 12-tone equal temperament.", fretboard.Description)
 	assert.Equal(t, 25, len(fretboard.Frets))
-	assert.Equal(t, Fret{Label: "0.00 cents", Position: 0}, fretboard.Frets[0])
-	assert.Equal(t, Fret{Label: "100.00 cents", Position: 33.68}, fretboard.Frets[1])
-	assert.Equal(t, Fret{Label: "200.00 cents", Position: 65.46}, fretboard.Frets[2])
-	assert.Equal(t, Fret{Label: "300.00 cents", Position: 95.46}, fretboard.Frets[3])
-	assert.Equal(t, Fret{Label: "400.00 cents", Position: 123.78}, fretboard.Frets[4])
-	assert.Equal(t, Fret{Label: "500.00 cents", Position: 150.51}, fretboard.Frets[5])
-	assert.Equal(t, Fret{Label: "600.00 cents", Position: 175.74}, fretboard.Frets[6])
-	assert.Equal(t, Fret{Label: "700.00 cents", Position: 199.55}, fretboard.Frets[7])
-	assert.Equal(t, Fret{Label: "800.00 cents", Position: 222.02}, fretboard.Frets[8])
-	assert.Equal(t, Fret{Label: "900.00 cents", Position: 243.24}, fretboard.Frets[9])
-	assert.Equal(t, Fret{Label: "1000.00 cents", Position: 263.26}, fretboard.Frets[10])
-	assert.Equal(t, Fret{Label: "1100.00 cents", Position: 282.16}, fretboard.Frets[11])
-	assert.Equal(t, Fret{Label: "1200.00 cents", Position: 300.0}, fretboard.Frets[12])
-	assert.Equal(t, Fret{Label: "1300.00 cents", Position: 316.84}, fretboard.Frets[13])
-	assert.Equal(t, Fret{Label: "2400.00 cents", Position: 450.0}, fretboard.Frets[24])
+	assert.Equal(t, music.Fret{Label: "0.00 cents", Position: 0}, fretboard.Frets[0])
+	assert.Equal(t, music.Fret{Label: "100.00 cents", Position: 33.68}, fretboard.Frets[1])
+	assert.Equal(t, music.Fret{Label: "200.00 cents", Position: 65.46}, fretboard.Frets[2])
+	assert.Equal(t, music.Fret{Label: "300.00 cents", Position: 95.46}, fretboard.Frets[3])
+	assert.Equal(t, music.Fret{Label: "400.00 cents", Position: 123.78}, fretboard.Frets[4])
+	assert.Equal(t, music.Fret{Label: "500.00 cents", Position: 150.51}, fretboard.Frets[5])
+	assert.Equal(t, music.Fret{Label: "600.00 cents", Position: 175.74}, fretboard.Frets[6])
+	assert.Equal(t, music.Fret{Label: "700.00 cents", Position: 199.55}, fretboard.Frets[7])
+	assert.Equal(t, music.Fret{Label: "800.00 cents", Position: 222.02}, fretboard.Frets[8])
+	assert.Equal(t, music.Fret{Label: "900.00 cents", Position: 243.24}, fretboard.Frets[9])
+	assert.Equal(t, music.Fret{Label: "1000.00 cents", Position: 263.26}, fretboard.Frets[10])
+	assert.Equal(t, music.Fret{Label: "1100.00 cents", Position: 282.16}, fretboard.Frets[11])
+	assert.Equal(t, music.Fret{Label: "1200.00 cents", Position: 300.0}, fretboard.Frets[12])
+	assert.Equal(t, music.Fret{Label: "1300.00 cents", Position: 316.84}, fretboard.Frets[13])
+	assert.Equal(t, music.Fret{Label: "2400.00 cents", Position: 450.0}, fretboard.Frets[24])
 }
 
 func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
@@ -515,7 +515,7 @@ func Test_ShouldReturnSazPlacementsWithProvidedScaleLength(t *testing.T) {
 	assert.Equal(t, response.StatusCode, http.StatusOK)
 	assert.Equal(t, response.Headers, headers)
 
-	fretboard := Fretboard{}
+	fretboard := music.Fretboard{}
 	_ = json.Unmarshal([]byte(response.Body), &fretboard)
 	assert.Equal(t, float64(540), fretboard.ScaleLength)
 	assert.Equal(t, "Saz", fretboard.System)

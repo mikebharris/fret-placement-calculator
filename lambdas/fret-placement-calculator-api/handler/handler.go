@@ -13,6 +13,7 @@ import (
 const (
 	defaultEqualTemperamentDivisions = 31
 	defaultJustLimit                 = 5
+	defaultNumberOfOctaves           = 1
 )
 
 var headers = map[string]string{
@@ -30,28 +31,28 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 		return errorResponse(http.StatusUnprocessableEntity, `{"error":"a numeric scaleLength greater than zero is required"}`), nil
 	}
 
-	var fretboard Fretboard
-	octaves := parseIntegerQueryParameter(q, "octaves", 1)
+	var fretboard music.Fretboard
+	octaves := parseIntegerQueryParameter(q, "octaves", defaultNumberOfOctaves)
 
 	switch q["tuningSystem"] {
 	case "equal":
-		fretboard = newFretboardFromTemperedScale(scaleLength, octaves, music.NewEqualTemperamentScale(uint(parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))))
+		fretboard = music.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewEqualTemperamentScale(uint(parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))))
 	case "saz":
-		fretboard = newFretboardFromJustScale(scaleLength, octaves, music.NewSazScale())
+		fretboard = music.NewFretboardFromJustScale(scaleLength, octaves, music.NewSazScale())
 	case "pythagorean":
-		fretboard = newFretboardFromJustScale(scaleLength, octaves, music.NewPythagoreanScale())
+		fretboard = music.NewFretboardFromJustScale(scaleLength, octaves, music.NewPythagoreanScale())
 	case "meantone":
-		fretboard = newFretboardFromTemperedScale(scaleLength, octaves, music.NewQuarterCommaMeantoneScale())
+		fretboard = music.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewQuarterCommaMeantoneScale())
 	case "extendedMeantone":
-		fretboard = newFretboardFromTemperedScale(scaleLength, octaves, music.NewExtendedQuarterCommaMeantoneScale())
+		fretboard = music.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewExtendedQuarterCommaMeantoneScale())
 	case "ptolemy":
-		fretboard = newFretboardFromJustScale(scaleLength, octaves, music.NewIntenseDiatonicScale(music.MusicalMode(validDiatonicModeOrDefault(q["diatonicMode"]))))
+		fretboard = music.NewFretboardFromJustScale(scaleLength, octaves, music.NewIntenseDiatonicScale(music.MusicalMode(validDiatonicModeOrDefault(q["diatonicMode"]))))
 	case "just5limitFromPythagorean":
-		fretboard = newFretboardFromJustScale(scaleLength, octaves, music.New5LimitPythagoreanScale())
+		fretboard = music.NewFretboardFromJustScale(scaleLength, octaves, music.New5LimitPythagoreanScale())
 	case "justFromRatios":
-		fretboard = newFretboardFromJustScale(scaleLength, octaves, music.NewJustIntonationChromaticScaleWithLimit(parseIntegerQueryParameter(q, "limit", defaultJustLimit)))
+		fretboard = music.NewFretboardFromJustScale(scaleLength, octaves, music.NewJustIntonationChromaticScaleWithLimit(parseIntegerQueryParameter(q, "limit", defaultJustLimit)))
 	case "bachWellTemperament":
-		fretboard = newFretboardFromTemperedScale(scaleLength, octaves, music.NewBachWohltemperierteKlavierScale())
+		fretboard = music.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewBachWohltemperierteKlavierScale())
 	default:
 		return errorResponse(http.StatusUnprocessableEntity, `{"error":"please provide a valid tuning system"}`), nil
 	}
