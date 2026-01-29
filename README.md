@@ -1,6 +1,6 @@
 # Fret Placement Calculator AWS Lambda service
 
-This simple AWS Lambda function depends on my music theory Go module at https://github.com/mikebharris/music.  All the computation is done in that module; this project is just a thin wrapper to expose it as a web service.
+This simple AWS Lambda function depends on my music theory and practice Go module at https://github.com/mikebharris/music.  All the computation is done in that module; this project is just a thin wrapper to expose it as a web service.
 
 The service outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
 various tunings, including:

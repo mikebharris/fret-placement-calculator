@@ -1,6 +1,6 @@
 module main
 
-go 1.25.5
+go 1.25.6
 
 require (
 	github.com/aws/aws-lambda-go v1.52.0
@@ -8,6 +8,8 @@ require (
 	github.com/hashicorp/hc-install v0.9.2
 	github.com/hashicorp/terraform-exec v0.24.0
 	github.com/mikebharris/music v0.3.3
+	github.com/mikebharris/music/music v0.4.0
+	github.com/mikebharris/music/instruments v0.4.0
 	github.com/stretchr/testify v1.11.1
 )
 
