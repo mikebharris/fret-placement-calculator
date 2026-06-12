@@ -1,7 +1,7 @@
 package main
 
 import (
-	"main/lambdas/fret-placement-calculator-api/handler"
+	"fret-placement-calculator-lambda/handler"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
