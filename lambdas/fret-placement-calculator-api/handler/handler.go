@@ -36,7 +36,7 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 	octaves := parseIntegerQueryParameter(q, "octaves", defaultNumberOfOctaves)
 
 	switch q["tuningSystem"] {
-	case "equal":
+	case "edo":
 		fretboard = instruments.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewEqualTemperamentScale(uint(parseIntegerQueryParameter(q, "divisions", defaultEqualTemperamentDivisions))))
 	case "saz":
 		fretboard = instruments.NewFretboardFromJustScale(scaleLength, octaves, music.NewSazScale())
@@ -48,7 +48,7 @@ func (h Handler) HandleRequest(_ context.Context, request events.LambdaFunctionU
 		fretboard = instruments.NewFretboardFromTemperedScale(scaleLength, octaves, music.NewExtendedQuarterCommaMeantoneScale())
 	case "ptolemy":
 		fretboard = instruments.NewFretboardFromJustScale(scaleLength, octaves, music.NewIntenseDiatonicScale(music.MusicalMode(validDiatonicModeOrDefault(q["diatonicMode"]))))
-	case "just5limitFromPythagorean":
+	case "pythagorean5":
 		fretboard = instruments.NewFretboardFromJustScale(scaleLength, octaves, music.New5LimitPythagoreanScale())
 	case "justFromRatios":
 		fretboard = instruments.NewFretboardFromJustScale(scaleLength, octaves, music.NewJustIntonationChromaticScaleWithLimit(parseIntegerQueryParameter(q, "limit", defaultJustLimit)))

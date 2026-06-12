@@ -1,8 +1,8 @@
-# Fret Placement Calculator AWS Lambda service
+# Fret Placement Calculator API AWS Lambda service
 
-This simple AWS Lambda function depends on my music theory and practice Go module at https://github.com/mikebharris/music.  All the computation is done in that module; this project is just a thin wrapper to expose it as a web service.
-
-The service outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
+This simple AWS Lambda function depends on my music theory and practice Go module
+at https://github.com/mikebharris/music. All the computation is done in that module; this project is just a thin wrapper
+to expose it as a web service.  This service is a sister service of https://github.com/mikebharris/musical-scales-api in some ways, and it outputs where to place the frets on a fretboard of a stringed instrument, effectively where to stop the strings, for
 various tunings, including:
 
 * Just Intonation by various means
@@ -14,43 +14,73 @@ various tunings, including:
 * Turkish Saz
 * Bach's Well Temperament (as decoded by Bradley Lehman)
 
-The fret positions are agnostic of the actual open string tuning, tension of the string, type of instrument, etc.
 
 ## Examples
 
 <details>
- <summary><code>GET</code> <code><b>/scaleLength={scaleLength}</b></code> <code>(returns fret positions for just intonation and scale length of {scaleLength}</code></summary>
+ <summary><code>GET</code> <code><b>/scaleLength={scaleLength}&tuningSystem=saz</b></code> <code>(returns fret positions for a Turkish Saz with a scale length of {scaleLength}</code></summary>
 
 ##### Parameters
 
-> | name           | type     | data type | default | description                                                                                                 |
-> |----------------|----------|-----------|---------|-------------------------------------------------------------------------------------------------------------|
-> | `scaleLength`  | required | float64   |         | The scale length from nut to bridge (saddle)                                                                |
-> | `tuningSystem` | required | string    |         | Tuning to use (just, meantone, pythagorean, equal, ptolemy, saz).  Defaults to a chromatic Just tuning.     |
-> | `diatonicMode` | optional | string    | Ionian  | Produce a diatonic scale instead of chromatic in the specified musical mode (ionian, dorin, phryggian, etc) |
-> | `limit`        | optional | int       | 5       | Limit for just intonation (prime number, such as 3, 5, 11, etc_ - tuningSystem = 'justFromRatios'           |
-> | `division`     | optional | int       | 31      | Number of divisions of the octave for equal temperament                                                     |
-> | `octaves`      | optional | int       | 1       | Number of octaves of frets to compute                                                                       |
+> | name           | type     | data type | default | description                                                                           |
+> |----------------|----------|-----------|---------|---------------------------------------------------------------------------------------|
+> | `tuningSystem` | required | string    |         | Tuning system to employ                                                               |
+> | `mode`         | optional | string    | Ionian  | Which diatonic scale to use for Ptolemy's Intense Diatonic (tuningSystem = 'ptolemy') |
+> | `limit`        | optional | int       | 5       | Limit for just intonation (tuningSystem = 'justFromRatios')                           |
+> | `divisions`    | optional | int       | 31      | Number of divisions of the octave for equal temperament (tuningSystem = 'edo')        |
+> | `octaves`      | optional | int       | 1       | Number of octaves-worth of frets                                                      |
 
 ##### Values for `tuningSystem`
 
-> | value                       | description                                                                         |
-> |-----------------------------|-------------------------------------------------------------------------------------|
-> | `justFromRatios`            | 5-limit Just Intonation derived from pure ratios                                    |
-> | `just5limitFromPythagorean` | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
-> | `meantone`                  | Quarter-Comma Meantone                                                              |
-> | `extendedMeantone`          | Extended Quarter-Comma Meantone                                                     |
-> | `bachWellTemperament`       | Bach's Well Temperament (as decoded by Bradley Lehman)                              |
-> | `pythagorean`               | Pythagorean 3-limit just tuning                                                     |
-> | `equal`                     | Equal Temperament                                                                   |
-> | `ptolemy`                   | Ptolemy's Intense Diatonic tuning                                                   |
-> | `saz`                       | Turkish Saz tuning                                                                  |
+> | value                 | type     | description                                                                         |
+> |-----------------------|----------|-------------------------------------------------------------------------------------|
+> | `justFromRatios`      | just     | 5-limit Just Intonation derived from pure ratios                                    |
+> | `pythagorean`         | just     | Pythagorean 3-limit just tuning                                                     |
+> | `pythagorean5`        | just     | 5-limit Just Intonation derived from tweaking Pythagorean scale by a syntonic comma |
+> | `ptolemy`             | just     | Ptolemy's Intense Diatonic tuning                                                   |
+> | `saz`                 | just     | Turkish Saz tuning                                                                  |
+> | `edo`                 | tempered | Equal Temperament (Equal Divisions of the Octave)                                   |
+> | `meantone`            | tempered | Quarter-Comma Meantone                                                              |
+> | `extendedMeantone`    | tempered | Extended Quarter-Comma Meantone                                                     |
+> | `bachWellTemperament` | tempered | Bach's Well Temperament (as decoded by Bradley Lehman)                              |
+
+##### Values for `mode`
+
+> | value        | description     |
+> |--------------|-----------------|
+> | `Lydian`     | Lydian mode     |
+> | `Ionian`     | Ionian mode     |
+> | `Mixolydian` | Mixolydian mode |
+> | `Dorian`     | Dorian mode     |
+> | `Aeloian`    | Aeolian mode    |
+> | `Phrygian`   | Phrygian mode   |
+> | `Locrian`    | Locrian mode    |
+
+##### Values for `limit`
+
+> | value   | description                                                          |
+> |---------|----------------------------------------------------------------------|
+> | uint    | A positive integer (usually a prime; common are 3, 5, 7, 11, 13, 17) |
+
+##### Values for `divisions`
+
+> | value | description                                                           |
+> |-------|-----------------------------------------------------------------------|
+> | uint  | Any positive integer (default = 12; common are 19, 23, 31, 53, 54, 55 |
+
+##### Values for `octaves`
+
+> | value | description                                      |
+> |-------|--------------------------------------------------|
+> | uint  | Any positive integer (default 1; normally 1 or 2 |
+
 
 ##### Responses
 
 > | http code | content-type       | response                                 |
 > |-----------|--------------------|------------------------------------------|
 > | `200`     | `application/json` | JSON object                              |
+> | `200`     | `text/plain`       | Scala file                               |
 > | `422`     | `application/json` | `{"code":"422","message":"Bad Request"}` |
 
 ##### Example cURL
@@ -112,7 +142,6 @@ Compute Ptolemy's Intense Diatonic tuning for a scale length of 570mm:
   ]
 }
 ````
-
 </details>
 
 ## Building and provisioning

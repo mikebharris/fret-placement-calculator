@@ -232,7 +232,7 @@ func Test_ShouldReturnFretPlacementsForFiveLimitPythagoreanScale(t *testing.T) {
 	// Given
 	// When
 	response, err := Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "just5limitFromPythagorean"},
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "pythagorean5"},
 	})
 
 	// Then
@@ -421,7 +421,7 @@ func Test_ShouldDefaultTo31EqualTemperamentByDefault(t *testing.T) {
 	// Given
 	// When
 	response, err := Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "equal"}})
+		QueryStringParameters: map[string]string{"scaleLength": "540", "tuningSystem": "edo"}})
 
 	// Then
 	assert.Nil(t, err)
@@ -440,7 +440,7 @@ func Test_ShouldReturnEqualTemperamentPlacementsWithCustomDivisions(t *testing.T
 	// Given
 	// When
 	response, err := Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "600", "tuningSystem": "equal", "divisions": "12"},
+		QueryStringParameters: map[string]string{"scaleLength": "600", "tuningSystem": "edo", "divisions": "12"},
 	})
 
 	// Then
@@ -473,7 +473,7 @@ func Test_ShouldReturnMultipleOctavesOfFretsIfSpecified(t *testing.T) {
 	// Given
 	// When
 	response, err := Handler{}.HandleRequest(context.Background(), events.LambdaFunctionURLRequest{
-		QueryStringParameters: map[string]string{"scaleLength": "600", "tuningSystem": "equal", "divisions": "12", "octaves": "2"},
+		QueryStringParameters: map[string]string{"scaleLength": "600", "tuningSystem": "edo", "divisions": "12", "octaves": "2"},
 	})
 
 	// Then
