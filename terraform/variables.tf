@@ -3,7 +3,7 @@ variable "contact" {
   default = "https://mbharris.co.uk"
 }
 variable "product" {
-  default = "fret-placement-calculator"
+  default = "fret-placement-calculator-api"
 }
 variable "orchestration" {
   default = "https://github.com/mikebharris/fret-placement-calculator"

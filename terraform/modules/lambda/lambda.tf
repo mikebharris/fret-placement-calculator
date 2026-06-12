@@ -1,13 +1,13 @@
 resource "aws_iam_role" "api_iam_role" {
   name                  = "${var.product}-api-iam-role"
   force_detach_policies = true
-  assume_role_policy    = jsonencode({
-    Version   = "2012-10-17"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
-        Sid       = ""
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
         Principal = {
           Service = "lambda.amazonaws.com"
         }
@@ -19,15 +19,6 @@ resource "aws_iam_role" "api_iam_role" {
 resource "aws_cloudwatch_log_group" "api_cloudwatch_log_group" {
   name              = "/aws/lambda/${aws_lambda_function.api_lambda_function.function_name}"
   retention_in_days = 1
-}
-
-data "aws_iam_policy_document" "api_iam_policy_document" {
-  statement {
-    effect  = "Allow"
-    actions = [
-      "ec2:DescribeNetworkInterfaces",
-    ]
-  }
 }
 
 resource "aws_iam_role_policy_attachment" "api_policy_attachment_execution" {
@@ -43,13 +34,13 @@ data "archive_file" "api_lambda_function_distribution" {
 
 resource "aws_s3_object" "api_lambda_function_distribution_bucket_object" {
   bucket = var.distribution_bucket
-  key    = "lambdas/${var.product}-api/${var.product}-api.zip"
+  key    = "lambdas/${var.product}/${var.product}.zip"
   source = data.archive_file.api_lambda_function_distribution.output_path
   etag   = filemd5(data.archive_file.api_lambda_function_distribution.output_path)
 }
 
 resource "aws_lambda_function" "api_lambda_function" {
-  function_name    = "${var.product}-api"
+  function_name    = var.product
   role             = aws_iam_role.api_iam_role.arn
   handler          = "bootstrap"
   runtime          = "provided.al2023"
@@ -61,7 +52,7 @@ resource "aws_lambda_function" "api_lambda_function" {
   memory_size      = 128
 
   tags = {
-    Name          = "${var.product}.lambda.api"
+    Name          = "${var.product}.lambda"
     Contact       = var.contact
     Project       = var.product
     Orchestration = var.orchestration
